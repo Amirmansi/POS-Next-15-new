@@ -1732,16 +1732,7 @@ const hasNonCashPayment = computed(() => {
 
 // Check if current payment scenario allows overpayment (change)
 const allowsOverpayment = computed(() => {
-	// If exact amount mode is not active, allow overpayment
-	if (!isExactAmountModeActive.value) return true
-
-	// If no payments yet, default to allowing overpayment
-	if (paymentEntries.value.length === 0) return true
-
-	// Cash only: allows overpayment
-	if (hasCashPayment.value && !hasNonCashPayment.value) return true
-
-	// Non-cash or mixed: no overpayment allowed
+	// Overpayment is never allowed — payment must exactly equal the invoice total
 	return false
 })
 
@@ -1780,8 +1771,8 @@ const canComplete = computed(() => {
 		return paymentEntries.value.length > 0
 	}
 
-	// Otherwise require full payment
-	return remainingAmount.value === 0 && paymentEntries.value.length > 0
+	// Otherwise require full payment — exact amount (no less, no more)
+	return remainingAmount.value === 0 && changeAmount.value === 0 && paymentEntries.value.length > 0
 })
 
 const paymentButtonText = computed(() => {
@@ -1811,6 +1802,8 @@ const { quickAmounts } = useQuickAmounts(remainingAmount, isLastMethodCash)
 // Whether a quick amount button should be disabled in exact-amount mode
 // Non-cash methods can only pay the exact remaining — no rounding allowed
 function isQuickAmountDisabled(amount) {
+	// Disable if adding this amount would cause overpayment
+	if (totalPaid.value + amount > roundCurrency(props.grandTotal)) return true
 	return (
 		isExactAmountModeActive.value &&
 		!isCashPaymentMethod(lastSelectedMethod.value) &&
@@ -2093,6 +2086,22 @@ function addCustomPayment(method, amount) {
 			amt = walletAvailable
 			isPartialWalletPayment = true
 		}
+	}
+
+	// Prevent overpayment: total paid must not exceed invoice grand total
+	amt = roundCurrency(amt)
+	const maxAllowed = roundCurrency(props.grandTotal - totalPaid.value)
+	if (maxAllowed <= 0) {
+		showWarning(__("Invoice is already fully paid"))
+		return
+	}
+	if (amt > maxAllowed) {
+		showWarning(
+			__("Payment cannot exceed invoice total. Remaining: {0}", [
+				formatCurrency(maxAllowed),
+			]),
+		)
+		return
 	}
 
 	// Exact amount validation for non-cash payments
