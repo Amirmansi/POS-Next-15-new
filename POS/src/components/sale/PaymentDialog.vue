@@ -925,7 +925,7 @@
 							<svg v-else class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
 								<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
 							</svg>
-							<span>{{ isSubmitting ? __('Processing...') : paymentButtonText }}</span>
+							<span>{{ isSubmitting ? __('Processing...') : __('Complete Payment') }}</span>
 						</button>
 					</div>
 				</div>
@@ -1761,32 +1761,13 @@ const canComplete = computed(() => {
 		return false
 	}
 
-	// If partial payment is allowed, can complete with any amount > 0
-	if (props.allowPartialPayment) {
-		return totalPaid.value > 0 && paymentEntries.value.length > 0
-	}
-
 	// If write-off is applied and covers the remaining amount, can complete
 	if (applyWriteOff.value && canWriteOff.value) {
 		return paymentEntries.value.length > 0
 	}
 
-	// Otherwise require full payment — exact amount (no less, no more)
+	// Require exact payment — paid amount must equal the grand total exactly (no less, no more)
 	return remainingAmount.value === 0 && changeAmount.value === 0 && paymentEntries.value.length > 0
-})
-
-const paymentButtonText = computed(() => {
-	// Show "Complete Payment" if fully paid or write-off covers remaining
-	if (
-		remainingAmount.value === 0 ||
-		(applyWriteOff.value && canWriteOff.value)
-	) {
-		return __("Complete Payment")
-	}
-	if (props.allowPartialPayment && totalPaid.value > 0) {
-		return __("Partial Payment")
-	}
-	return __("Complete Payment")
 })
 
 // Use quick amounts composable for smart amount suggestions
