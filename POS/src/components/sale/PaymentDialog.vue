@@ -761,7 +761,7 @@
 
 							<!-- Complete Payment Button -->
 							<button
-								v-if="(remainingAmount === 0 || (applyWriteOff && canWriteOff)) && totalPaid > 0"
+								v-if="(remainingAmount === 0 || (applyWriteOff && canWriteOff)) && totalPaid > 0 && changeAmount === 0"
 								@click="completePayment"
 								:disabled="isSubmitting || !canComplete"
 								:class="[
@@ -1120,6 +1120,7 @@ function handleNumpadEnter(value) {
 		numpadAddPayment()
 	} else if (
 		remainingAmount.value === 0 &&
+		changeAmount.value === 0 &&
 		totalPaid.value > 0 &&
 		canComplete.value
 	) {
@@ -2234,6 +2235,12 @@ function completePayment() {
 
 	if (!canComplete.value) {
 		log.warn("[PaymentDialog] Cannot complete - validation failed")
+		return
+	}
+
+	// Extra safety: block overpayment even if canComplete somehow passed
+	if (changeAmount.value > 0) {
+		log.warn("[PaymentDialog] Cannot complete - overpayment detected")
 		return
 	}
 
