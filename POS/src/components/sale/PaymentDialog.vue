@@ -1732,42 +1732,46 @@ const hasNonCashPayment = computed(() => {
 
 // Check if current payment scenario allows overpayment (change)
 const allowsOverpayment = computed(() => {
-	// Overpayment is never allowed — payment must exactly equal the invoice total
+	// Overpayment is NEVER allowed — payment must exactly equal the invoice total
+	// This is enforced in canComplete (changeAmount > 0 check) and isExactAmountValid
 	return false
 })
 
 // Check if current payment is valid according to exact amount rules
 const isExactAmountValid = computed(() => {
-	if (!isExactAmountModeActive.value) return true
-
-	// If no payments, it's valid (nothing to validate yet)
+	// No payments yet — nothing to validate
 	if (paymentEntries.value.length === 0) return true
 
-	// Cash only: always valid (allows overpayment)
-	if (hasCashPayment.value && !hasNonCashPayment.value) return true
-
-	// Non-cash or mixed: total paid must not exceed grand total
+	// Payment must NEVER exceed the grand total — no overpayment allowed
+	// regardless of payment method (cash, card, or mixed)
 	return totalPaid.value <= roundCurrency(props.grandTotal)
 })
 
 const canComplete = computed(() => {
 	// Check sales person validation first (mandatory when enabled)
-	if (!isSalesPersonValid.value) {
-		return false
-	}
+	if (!isSalesPersonValid.value) return false
 
-	// Check exact amount validation
-	if (!isExactAmountValid.value) {
-		return false
+	// STRICT: Overpayment is NEVER allowed — block immediately if paid > grandTotal
+	if (changeAmount.value > 0) return false
+
+	// No payment entries at all → block
+	if (paymentEntries.value.length === 0) return false
+
+	// If partial payment is allowed, can complete with any amount > 0 (but NOT overpayment — already checked above)
+	if (props.allowPartialPayment) {
+		return totalPaid.value > 0
 	}
 
 	// If write-off is applied and covers the remaining amount, can complete
 	if (applyWriteOff.value && canWriteOff.value) {
-		return paymentEntries.value.length > 0
+		return true
 	}
 
-	// Require exact payment — paid amount must equal the grand total exactly (no less, no more)
-	return remainingAmount.value === 0 && changeAmount.value === 0 && paymentEntries.value.length > 0
+	// Full payment required: paid must equal grand total exactly
+	// Since changeAmount > 0 is already blocked above, totalPaid <= grandTotal is guaranteed.
+	// remainingAmount === 0 means totalPaid >= grandTotal.
+	// Together: totalPaid === grandTotal ✓
+	return remainingAmount.value === 0
 })
 
 // Use quick amounts composable for smart amount suggestions
