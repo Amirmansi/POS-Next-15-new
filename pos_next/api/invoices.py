@@ -32,6 +32,9 @@ DOCTYPE_POS_SETTINGS = "POS Settings"
 DOCTYPE_POS_PROFILE = "POS Profile"
 DOCTYPE_COMMENT = "Comment"
 
+# Floating-point tolerance for currency comparisons (e.g., overpayment checks)
+PAYMENT_FLOAT_TOLERANCE = 0.001
+
 
 try:
     from erpnext.accounts.doctype.pricing_rule.pricing_rule import (
@@ -1203,6 +1206,32 @@ def submit_invoice(invoice=None, data=None):
 
     # Normalize pricing_rules before processing
     standardize_pricing_rules(invoice.get("items"))
+
+    # ========================================================================
+    # OVERPAYMENT VALIDATION
+    # ========================================================================
+    # Reject any invoice where paid amount exceeds grand total.
+    # This is a server-side guard that cannot be bypassed by the frontend.
+    # ========================================================================
+    grand_total = flt(invoice.get("grand_total", 0))
+    if grand_total > 0:
+        payments = invoice.get("payments", [])
+        paid_amount_from_payments = sum(flt(p.get("amount", 0)) for p in payments)
+        if paid_amount_from_payments > grand_total + PAYMENT_FLOAT_TOLERANCE:
+            frappe.throw(
+                _("Paid amount ({0}) cannot exceed grand total ({1}). Please enter the exact amount.").format(
+                    paid_amount_from_payments, grand_total
+                ),
+                title=_("Overpayment Not Allowed")
+            )
+        paid_amount_field = flt(invoice.get("paid_amount", 0))
+        if paid_amount_field > grand_total + PAYMENT_FLOAT_TOLERANCE:
+            frappe.throw(
+                _("Paid amount ({0}) cannot exceed grand total ({1}). Please enter the exact amount.").format(
+                    paid_amount_field, grand_total
+                ),
+                title=_("Overpayment Not Allowed")
+            )
 
     # ========================================================================
     # OFFLINE INVOICE DEDUPLICATION

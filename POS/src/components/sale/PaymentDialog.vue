@@ -1155,7 +1155,10 @@ function addMobileCustomPayment() {
 
 function numpadAddPayment() {
 	if (numpadValue.value > 0 && lastSelectedMethod.value) {
-		addCustomPayment(lastSelectedMethod.value, numpadValue.value)
+		const maxAllowed = remainingAmount.value
+		if (maxAllowed <= 0) return
+		const amountToAdd = Math.min(numpadValue.value, maxAllowed)
+		addCustomPayment(lastSelectedMethod.value, amountToAdd)
 		numpadClear()
 	}
 }
@@ -2074,7 +2077,7 @@ function addCustomPayment(method, amount) {
 		}
 	}
 
-	// Prevent overpayment: total paid must not exceed invoice grand total
+	// Prevent overpayment: cap amount at remaining balance
 	amt = roundCurrency(amt)
 	const maxAllowed = roundCurrency(props.grandTotal - totalPaid.value)
 	if (maxAllowed <= 0) {
@@ -2082,12 +2085,7 @@ function addCustomPayment(method, amount) {
 		return
 	}
 	if (amt > maxAllowed) {
-		showWarning(
-			__("Payment cannot exceed invoice total. Remaining: {0}", [
-				formatCurrency(maxAllowed),
-			]),
-		)
-		return
+		amt = maxAllowed
 	}
 
 	// Exact amount validation for non-cash payments
