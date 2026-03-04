@@ -1155,10 +1155,17 @@ function addMobileCustomPayment() {
 
 function numpadAddPayment() {
 	if (numpadValue.value > 0 && lastSelectedMethod.value) {
-		const maxAllowed = remainingAmount.value
-		if (maxAllowed <= 0) return
-		const amountToAdd = Math.min(numpadValue.value, maxAllowed)
-		addCustomPayment(lastSelectedMethod.value, amountToAdd)
+		const isCash = isCashPaymentMethod(lastSelectedMethod.value)
+		// Cash payments allow overpayment (change is returned to customer)
+		// Non-cash payments are capped at the remaining amount
+		if (isCash && !hasNonCashPayment.value) {
+			addCustomPayment(lastSelectedMethod.value, numpadValue.value)
+		} else {
+			const maxAllowed = remainingAmount.value
+			if (maxAllowed <= 0) return
+			const amountToAdd = Math.min(numpadValue.value, maxAllowed)
+			addCustomPayment(lastSelectedMethod.value, amountToAdd)
+		}
 		numpadClear()
 	}
 }
@@ -1735,10 +1742,22 @@ const hasNonCashPayment = computed(() => {
 })
 
 // Check if current payment scenario allows overpayment (change)
+// Overpayment (returning change) is allowed when the payment contains a cash entry
+// and there is no non-cash payment mixed in (to keep accounting clean).
 const allowsOverpayment = computed(() => {
-	// Overpayment is NEVER allowed — payment must exactly equal the invoice total
-	// This is enforced in canComplete (changeAmount > 0 check) and isExactAmountValid
-	return false
+	// Must have at least one cash payment entry
+	const hasCash = paymentEntries.value.some((entry) => {
+		const method = paymentMethods.value.find(
+			(m) => m.mode_of_payment === entry.mode_of_payment,
+		)
+		return isCashPaymentMethod(method)
+	})
+	if (!hasCash) return false
+
+	// Do not allow overpayment when exact-amount mode is active with non-cash mixed in
+	if (isExactAmountModeActive.value && hasNonCashPayment.value) return false
+
+	return true
 })
 
 // Check if current payment is valid according to exact amount rules
@@ -1746,8 +1765,10 @@ const isExactAmountValid = computed(() => {
 	// No payments yet — nothing to validate
 	if (paymentEntries.value.length === 0) return true
 
-	// Payment must NEVER exceed the grand total — no overpayment allowed
-	// regardless of payment method (cash, card, or mixed)
+	// Overpayment via cash is acceptable — change will be returned to customer
+	if (allowsOverpayment.value) return true
+
+	// Otherwise payment must not exceed grand total
 	return totalPaid.value <= roundCurrency(props.grandTotal)
 })
 
@@ -1755,13 +1776,13 @@ const canComplete = computed(() => {
 	// Check sales person validation first (mandatory when enabled)
 	if (!isSalesPersonValid.value) return false
 
-	// STRICT: Overpayment is NEVER allowed — block immediately if paid > grandTotal
-	if (changeAmount.value > 0) return false
+	// Overpayment with cash is allowed — cashier hands back the change
+	if (changeAmount.value > 0 && !allowsOverpayment.value) return false
 
 	// No payment entries at all → block
 	if (paymentEntries.value.length === 0) return false
 
-	// If partial payment is allowed, can complete with any amount > 0 (but NOT overpayment — already checked above)
+	// If partial payment is allowed, can complete with any amount > 0
 	if (props.allowPartialPayment) {
 		return totalPaid.value > 0
 	}
@@ -1771,11 +1792,8 @@ const canComplete = computed(() => {
 		return true
 	}
 
-	// Full payment required: paid must equal grand total exactly
-	// Since changeAmount > 0 is already blocked above, totalPaid <= grandTotal is guaranteed.
-	// remainingAmount === 0 means totalPaid >= grandTotal.
-	// Together: totalPaid === grandTotal ✓
-	return remainingAmount.value === 0
+	// Full payment required: paid must be >= grand total (change is acceptable for cash)
+	return remainingAmount.value === 0 || (changeAmount.value > 0 && allowsOverpayment.value)
 })
 
 // Use quick amounts composable for smart amount suggestions
@@ -1791,11 +1809,17 @@ const { quickAmounts } = useQuickAmounts(remainingAmount, isLastMethodCash)
 // Whether a quick amount button should be disabled in exact-amount mode
 // Non-cash methods can only pay the exact remaining — no rounding allowed
 function isQuickAmountDisabled(amount) {
-	// Disable if adding this amount would cause overpayment
+	// For cash payments, allow amounts above grand total (change will be returned)
+	const isCash = isCashPaymentMethod(lastSelectedMethod.value)
+	if (isCash && !hasNonCashPayment.value) {
+		// Only disable if this cash-only scenario has no non-cash mixed in
+		return false
+	}
+	// For non-cash or mixed: disable if adding this amount would cause overpayment
 	if (totalPaid.value + amount > roundCurrency(props.grandTotal)) return true
 	return (
 		isExactAmountModeActive.value &&
-		!isCashPaymentMethod(lastSelectedMethod.value) &&
+		!isCash &&
 		amount !== roundCurrency(remainingAmount.value)
 	)
 }
@@ -2077,15 +2101,24 @@ function addCustomPayment(method, amount) {
 		}
 	}
 
-	// Prevent overpayment: cap amount at remaining balance
+	// Prevent overpayment for non-cash payments: cap amount at remaining balance
+	// Cash payments may exceed the grand total — the surplus is returned as change
 	amt = roundCurrency(amt)
+	const isCash = isCashPaymentMethod(method)
 	const maxAllowed = roundCurrency(props.grandTotal - totalPaid.value)
-	if (maxAllowed <= 0) {
+	if (!isCash || hasNonCashPayment.value) {
+		// Non-cash or mixed: strictly cap at remaining
+		if (maxAllowed <= 0) {
+			showWarning(__("Invoice is already fully paid"))
+			return
+		}
+		if (amt > maxAllowed) {
+			amt = maxAllowed
+		}
+	} else if (maxAllowed <= 0) {
+		// Pure cash but invoice already fully paid
 		showWarning(__("Invoice is already fully paid"))
 		return
-	}
-	if (amt > maxAllowed) {
-		amt = maxAllowed
 	}
 
 	// Exact amount validation for non-cash payments
@@ -2236,9 +2269,9 @@ function completePayment() {
 		return
 	}
 
-	// Extra safety: block overpayment even if canComplete somehow passed
-	if (changeAmount.value > 0) {
-		log.warn("[PaymentDialog] Cannot complete - overpayment detected")
+	// Safety: block non-cash overpayment (cash overpayment with change is allowed)
+	if (changeAmount.value > 0 && !allowsOverpayment.value) {
+		log.warn("[PaymentDialog] Cannot complete - overpayment detected without cash")
 		return
 	}
 
@@ -2246,11 +2279,17 @@ function completePayment() {
 	const effectivePaid = totalPaid.value + writeOffAmount.value
 	const isPartial = effectivePaid < props.grandTotal
 
+	// When overpaying with cash, the accounting paid_amount must equal grand_total
+	// The actual cash received (totalPaid) may be higher — the surplus is change
+	const accountingPaidAmount = changeAmount.value > 0
+		? roundCurrency(props.grandTotal)
+		: totalPaid.value
+
 	const paymentData = {
 		payments: paymentEntries.value,
 		change_amount: changeAmount.value,
 		is_partial_payment: isPartial,
-		paid_amount: totalPaid.value,
+		paid_amount: accountingPaidAmount,
 		outstanding_amount: isPartial
 			? remainingAmount.value - writeOffAmount.value
 			: 0,

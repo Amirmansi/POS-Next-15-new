@@ -2,33 +2,42 @@
 	<div class="flex flex-col h-full bg-gray-50">
 		<!-- Item Groups Filter Tabs -->
 		<div class="px-1.5 sm:px-3 pt-1.5 sm:pt-3 pb-1.5 sm:pb-2 bg-white border-b border-gray-200">
-			<div class="flex items-center gap-1 sm:gap-2 overflow-x-auto pb-1 scrollbar-hide snap-x snap-mandatory">
+			<div class="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 scrollbar-hide snap-x snap-mandatory">
+				<!-- All Items Tab -->
 				<button
 					@click="itemStore.setSelectedItemGroup(null)"
 					:class="[
-						'flex items-center px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[10px] sm:text-xs font-medium whitespace-nowrap transition-[background-color,border-color] duration-75 touch-manipulation snap-start flex-shrink-0',
+						'group flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-[10px] sm:text-xs font-semibold whitespace-nowrap transition-all duration-150 touch-manipulation snap-start flex-shrink-0 border-2',
 						!selectedItemGroup
-							? 'bg-blue-50 text-blue-600 border-2 border-blue-500 shadow-sm'
-							: 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 active:bg-gray-100',
+							? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-200'
+							: 'bg-white text-gray-600 border-gray-200 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600 active:bg-blue-100',
 					]"
+					:title="__('All Items')"
 				>
-					<svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-					</svg>
-					<span>{{ __('All Items') }}</span>
+					<span :class="['inline-flex items-center justify-center rounded-lg w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0', !selectedItemGroup ? 'bg-blue-500' : 'bg-gray-100 group-hover:bg-blue-100']">
+						<svg class="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"/>
+						</svg>
+					</span>
+					<span>{{ __('All') }}</span>
 				</button>
+				<!-- Item Group Tabs -->
 				<button
-					v-for="group in itemGroups"
+					v-for="(group, index) in itemGroups"
 					:key="group.item_group"
 					@click="itemStore.setSelectedItemGroup(group.item_group)"
 					:class="[
-						'flex items-center px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[10px] sm:text-xs font-medium whitespace-nowrap transition-[background-color,border-color] duration-75 touch-manipulation snap-start flex-shrink-0',
+						'group flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-[10px] sm:text-xs font-semibold whitespace-nowrap transition-all duration-150 touch-manipulation snap-start flex-shrink-0 border-2',
 						selectedItemGroup === group.item_group
-							? 'bg-blue-50 text-blue-600 border-2 border-blue-500 shadow-sm'
-							: 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 active:bg-gray-100',
+							? getGroupActiveClass(index)
+							: getGroupInactiveClass(index),
 					]"
+					:title="__(group.item_group)"
 				>
-					<span>{{ __(group.item_group) }}</span>
+					<span :class="getGroupIconClass(group, index)">
+						{{ getGroupIcon(group.item_group, index) }}
+					</span>
+					<span class="max-w-[80px] sm:max-w-[100px] truncate">{{ __(group.item_group) }}</span>
 				</button>
 			</div>
 		</div>
@@ -1108,6 +1117,67 @@ function handleItemClick(itemCode) {
 
 function formatCurrency(amount) {
 	return formatCurrencyUtil(Number.parseFloat(amount || 0), props.currency)
+}
+
+// Item group color palette — cycles through a set of distinct colour themes
+const GROUP_COLORS = [
+	// active class,                        inactive hover class,               icon active bg,   icon hover bg
+	['bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-200', 'bg-white text-indigo-700 border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50 active:bg-indigo-100', 'bg-indigo-500', 'bg-indigo-100'],
+	['bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-200', 'bg-white text-emerald-700 border-emerald-200 hover:border-emerald-400 hover:bg-emerald-50 active:bg-emerald-100', 'bg-emerald-500', 'bg-emerald-100'],
+	['bg-amber-500 text-white border-amber-500 shadow-md shadow-amber-200', 'bg-white text-amber-700 border-amber-200 hover:border-amber-400 hover:bg-amber-50 active:bg-amber-100', 'bg-amber-400', 'bg-amber-100'],
+	['bg-rose-600 text-white border-rose-600 shadow-md shadow-rose-200', 'bg-white text-rose-700 border-rose-200 hover:border-rose-400 hover:bg-rose-50 active:bg-rose-100', 'bg-rose-500', 'bg-rose-100'],
+	['bg-violet-600 text-white border-violet-600 shadow-md shadow-violet-200', 'bg-white text-violet-700 border-violet-200 hover:border-violet-400 hover:bg-violet-50 active:bg-violet-100', 'bg-violet-500', 'bg-violet-100'],
+	['bg-teal-600 text-white border-teal-600 shadow-md shadow-teal-200', 'bg-white text-teal-700 border-teal-200 hover:border-teal-400 hover:bg-teal-50 active:bg-teal-100', 'bg-teal-500', 'bg-teal-100'],
+	['bg-orange-500 text-white border-orange-500 shadow-md shadow-orange-200', 'bg-white text-orange-700 border-orange-200 hover:border-orange-400 hover:bg-orange-50 active:bg-orange-100', 'bg-orange-400', 'bg-orange-100'],
+	['bg-cyan-600 text-white border-cyan-600 shadow-md shadow-cyan-200', 'bg-white text-cyan-700 border-cyan-200 hover:border-cyan-400 hover:bg-cyan-50 active:bg-cyan-100', 'bg-cyan-500', 'bg-cyan-100'],
+]
+
+function getGroupActiveClass(index) {
+	return GROUP_COLORS[index % GROUP_COLORS.length][0]
+}
+function getGroupInactiveClass(index) {
+	return GROUP_COLORS[index % GROUP_COLORS.length][1]
+}
+function getGroupIconActiveBg(index) {
+	return GROUP_COLORS[index % GROUP_COLORS.length][2]
+}
+function getGroupIconHoverBg(index) {
+	return GROUP_COLORS[index % GROUP_COLORS.length][3]
+}
+function getGroupIconClass(group, index) {
+	const base = 'inline-flex items-center justify-center rounded-lg w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 text-[11px]'
+	const isActive = selectedItemGroup.value === group.item_group
+	const colorBg = isActive ? getGroupIconActiveBg(index) : 'bg-gray-100'
+	return `${base} ${colorBg}`
+}
+
+// Map common group name keywords to emojis for quick visual identification
+const ICON_MAP = {
+	food: '🍔', meal: '🍽️', drink: '🥤', beverage: '☕', coffee: '☕',
+	bakery: '🥐', bread: '🍞', fruit: '🍎', veg: '🥦', vegetable: '🥦',
+	meat: '🥩', seafood: '🐟', fish: '🐟', dairy: '🥛', cheese: '🧀',
+	sweet: '🍬', dessert: '🍰', cake: '🎂', candy: '🍭',
+	electronic: '💻', mobile: '📱', phone: '📱', computer: '🖥️',
+	cloth: '👕', fashion: '👗', shoe: '👟', accessory: '💍',
+	toy: '🧸', game: '🎮', sport: '⚽', fitness: '🏋️',
+	book: '📚', stationery: '✏️', office: '🖊️',
+	health: '💊', medicine: '🏥', beauty: '💄', cosmetic: '💄',
+	home: '🏠', furniture: '🛋️', kitchen: '🍳', tool: '🔧',
+	car: '🚗', auto: '🚗', garden: '🌱', pet: '🐾',
+	gift: '🎁', offer: '🏷️', sale: '💰', promo: '📣',
+	مواد: '🛒', مشروبات: '🥤', خضار: '🥦', فواكه: '🍎', لحوم: '🥩',
+	حلويات: '🍬', الكترونيات: '💻', ملابس: '👕', ادوات: '🔧',
+}
+
+function getGroupIcon(groupName, index) {
+	if (!groupName) return '📦'
+	const lower = groupName.toLowerCase()
+	for (const [keyword, icon] of Object.entries(ICON_MAP)) {
+		if (lower.includes(keyword)) return icon
+	}
+	// Default fallback icons cycling by index
+	const defaults = ['🏷️', '📦', '🛍️', '🗂️', '📋', '🔖', '🗃️', '📌']
+	return defaults[index % defaults.length]
 }
 
 // Show warehouse availability dialog

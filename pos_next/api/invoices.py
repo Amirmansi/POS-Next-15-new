@@ -1208,30 +1208,41 @@ def submit_invoice(invoice=None, data=None):
     standardize_pricing_rules(invoice.get("items"))
 
     # ========================================================================
-    # OVERPAYMENT VALIDATION
+    # OVERPAYMENT HANDLING
     # ========================================================================
-    # Reject any invoice where paid amount exceeds grand total.
-    # This is a server-side guard that cannot be bypassed by the frontend.
+    # Accept payments that exceed grand total (e.g. customer pays with a
+    # larger denomination).  The change is recorded in change_amount but the
+    # actual paid_amount and every payment entry are capped so that
+    # sum(payments) == grand_total.  This keeps accounting clean while the
+    # cashier is informed of the change to hand back.
     # ========================================================================
     grand_total = flt(invoice.get("grand_total", 0))
     if grand_total > 0:
         payments = invoice.get("payments", [])
         paid_amount_from_payments = sum(flt(p.get("amount", 0)) for p in payments)
         if paid_amount_from_payments > grand_total + PAYMENT_FLOAT_TOLERANCE:
-            frappe.throw(
-                _("Paid amount ({0}) cannot exceed grand total ({1}). Please enter the exact amount.").format(
-                    paid_amount_from_payments, grand_total
-                ),
-                title=_("Overpayment Not Allowed")
-            )
+            # Calculate change and cap payments so their sum equals grand_total
+            change = flt(paid_amount_from_payments - grand_total)
+            # Reduce payments from the last entry backwards until the excess is covered
+            remaining_excess = change
+            for payment in reversed(payments):
+                p_amt = flt(payment.get("amount", 0))
+                if p_amt <= 0:
+                    continue
+                reduction = min(p_amt, remaining_excess)
+                payment["amount"] = flt(p_amt - reduction)
+                remaining_excess = flt(remaining_excess - reduction)
+                if remaining_excess <= PAYMENT_FLOAT_TOLERANCE:
+                    break
+            # Propagate capped amounts back to the invoice dict
+            invoice["payments"] = payments
+            # Always use the backend-calculated change to guarantee accounting accuracy
+            data["change_amount"] = change
+
+        # Cap paid_amount field as well
         paid_amount_field = flt(invoice.get("paid_amount", 0))
         if paid_amount_field > grand_total + PAYMENT_FLOAT_TOLERANCE:
-            frappe.throw(
-                _("Paid amount ({0}) cannot exceed grand total ({1}). Please enter the exact amount.").format(
-                    paid_amount_field, grand_total
-                ),
-                title=_("Overpayment Not Allowed")
-            )
+            invoice["paid_amount"] = grand_total
 
     # ========================================================================
     # OFFLINE INVOICE DEDUPLICATION
@@ -1376,6 +1387,13 @@ def submit_invoice(invoice=None, data=None):
                         f"Failed to apply write-off from POS Profile {pos_profile}: {e}",
                         "POS Write-Off Error"
                     )
+
+        # Apply change_amount to invoice doc (overpayment change to be handed back)
+        _change_amount = data.get("change_amount") if data.get("change_amount") is not None else invoice.get("change_amount")
+        change_amount = flt(_change_amount or 0)
+        if change_amount > 0 and doctype == "Sales Invoice":
+            invoice_doc.change_amount = change_amount
+            invoice_doc.base_change_amount = change_amount
 
         # Validate stock availability before submission
         # _validate_stock_on_invoice checks _should_block internally
