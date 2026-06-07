@@ -1,0 +1,254 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "format:INST-{YYYY}-{#####}",
+ "creation": "2026-01-01 00:00:00.000000",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "sales_invoice",
+  "customer",
+  "customer_name",
+  "invoice_date",
+  "column_break_invoice",
+  "plan_status",
+  "payment_type",
+  "section_break_amounts",
+  "invoice_amount",
+  "down_payment",
+  "column_break_interest",
+  "interest_rate",
+  "installment_months",
+  "section_break_calc",
+  "total_with_interest",
+  "monthly_installment",
+  "column_break_schedule",
+  "due_day",
+  "first_installment_date",
+  "section_break_table",
+  "schedule",
+  "section_break_summary",
+  "total_paid",
+  "total_remaining"
+ ],
+ "fields": [
+  {
+   "fieldname": "sales_invoice",
+   "fieldtype": "Link",
+   "label": "فاتورة المبيعات",
+   "options": "Sales Invoice",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "العميل",
+   "options": "Customer",
+   "fetch_from": "sales_invoice.customer",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "label": "اسم العميل",
+   "fetch_from": "customer.customer_name",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "invoice_date",
+   "fieldtype": "Date",
+   "label": "تاريخ الفاتورة",
+   "fetch_from": "sales_invoice.posting_date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_invoice",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "plan_status",
+   "fieldtype": "Select",
+   "label": "حالة الخطة",
+   "options": "نشط\nمكتمل\nمتعثر\nملغي",
+   "default": "نشط",
+   "in_list_view": 1,
+   "bold": 1
+  },
+  {
+   "fieldname": "payment_type",
+   "fieldtype": "Select",
+   "label": "نوع الدفع",
+   "options": "تقسيط شهري\nدفع كامل مؤجل\nدفعة مقدمة + أقساط",
+   "reqd": 1,
+   "default": "تقسيط شهري"
+  },
+  {
+   "fieldname": "section_break_amounts",
+   "fieldtype": "Section Break",
+   "label": "تفاصيل التقسيط"
+  },
+  {
+   "fieldname": "invoice_amount",
+   "fieldtype": "Currency",
+   "label": "قيمة الفاتورة",
+   "fetch_from": "sales_invoice.grand_total",
+   "read_only": 1
+  },
+  {
+   "fieldname": "down_payment",
+   "fieldtype": "Currency",
+   "label": "الدفعة المقدمة",
+   "default": "0"
+  },
+  {
+   "fieldname": "column_break_interest",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "interest_rate",
+   "fieldtype": "Percent",
+   "label": "نسبة الفائدة (%)",
+   "default": "0"
+  },
+  {
+   "fieldname": "installment_months",
+   "fieldtype": "Int",
+   "label": "عدد الأشهر",
+   "default": "12",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_calc",
+   "fieldtype": "Section Break",
+   "label": "الإجماليات المحسوبة"
+  },
+  {
+   "fieldname": "total_with_interest",
+   "fieldtype": "Currency",
+   "label": "الإجمالي بعد الفائدة",
+   "read_only": 1,
+   "bold": 1
+  },
+  {
+   "fieldname": "monthly_installment",
+   "fieldtype": "Currency",
+   "label": "قيمة القسط الشهري",
+   "read_only": 1,
+   "bold": 1
+  },
+  {
+   "fieldname": "column_break_schedule",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "due_day",
+   "fieldtype": "Select",
+   "label": "يوم الاستحقاق الشهري",
+   "options": "1\n5\n10\n15\n20\n25\nآخر الشهر",
+   "default": "1"
+  },
+  {
+   "fieldname": "first_installment_date",
+   "fieldtype": "Date",
+   "label": "تاريخ أول قسط",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_table",
+   "fieldtype": "Section Break",
+   "label": "جدول الأقساط"
+  },
+  {
+   "fieldname": "schedule",
+   "fieldtype": "Table",
+   "label": "جدول الأقساط",
+   "options": "Installment Schedule"
+  },
+  {
+   "fieldname": "section_break_summary",
+   "fieldtype": "Section Break",
+   "label": "الملخص المالي"
+  },
+  {
+   "fieldname": "total_paid",
+   "fieldtype": "Currency",
+   "label": "إجمالي المدفوع",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "total_remaining",
+   "fieldtype": "Currency",
+   "label": "إجمالي المتبقي",
+   "read_only": 1,
+   "bold": 1,
+   "in_list_view": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [
+  {
+   "link_doctype": "Sales Invoice",
+   "link_fieldname": "name",
+   "parent_doctype": "Installment Plan",
+   "table_fieldname": "sales_invoice"
+  }
+ ],
+ "modified": "2026-01-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "POS Next",
+ "name": "Installment Plan",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "cancel": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "POSNext Cashier",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts User",
+   "share": 1,
+   "submit": 1,
+   "cancel": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "customer_name",
+ "track_changes": 1
+}

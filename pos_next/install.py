@@ -25,6 +25,9 @@ def after_install():
 		# Setup default print format for POS Profiles
 		setup_default_print_format()
 
+		# Create installment system custom fields
+		create_installment_custom_fields()
+
 		# Clear cache to ensure changes take effect
 		frappe.clear_cache()
 		frappe.db.commit()
@@ -46,6 +49,9 @@ def after_migrate():
 		# Setup default print format
 		setup_default_print_format(quiet=True)
 
+		# Ensure installment custom fields exist
+		create_installment_custom_fields(quiet=True)
+
 		# Clear cache
 		frappe.clear_cache()
 		frappe.db.commit()
@@ -59,6 +65,168 @@ def after_migrate():
 		)
 		log_message(f"POS Next: Migration error - {str(e)}", level="error")
 		raise
+
+
+def create_installment_custom_fields(quiet=False):
+	"""Create custom fields for the installment system on Customer, Item, and Sales Invoice."""
+	fields = [
+		# --- Customer ---
+		{
+			"dt": "Customer",
+			"fieldname": "custom_full_name_ar",
+			"fieldtype": "Data",
+			"label": "الاسم الكامل بالعربي",
+			"insert_after": "customer_name",
+		},
+		{
+			"dt": "Customer",
+			"fieldname": "custom_address_detail",
+			"fieldtype": "Small Text",
+			"label": "العنوان التفصيلي",
+			"insert_after": "custom_full_name_ar",
+		},
+		{
+			"dt": "Customer",
+			"fieldname": "custom_mobile",
+			"fieldtype": "Data",
+			"label": "رقم الهاتف",
+			"insert_after": "custom_address_detail",
+			"options": "Phone",
+		},
+		{
+			"dt": "Customer",
+			"fieldname": "custom_whatsapp",
+			"fieldtype": "Data",
+			"label": "رقم الواتساب",
+			"insert_after": "custom_mobile",
+			"options": "Phone",
+		},
+		{
+			"dt": "Customer",
+			"fieldname": "custom_id_image",
+			"fieldtype": "Attach Image",
+			"label": "صورة البطاقة / الهوية",
+			"insert_after": "custom_whatsapp",
+		},
+		{
+			"dt": "Customer",
+			"fieldname": "custom_national_id",
+			"fieldtype": "Data",
+			"label": "رقم الهوية الوطنية",
+			"insert_after": "custom_id_image",
+		},
+		{
+			"dt": "Customer",
+			"fieldname": "custom_payment_type",
+			"fieldtype": "Select",
+			"label": "نوع الدفع المعتاد",
+			"options": "نقدي\nتقسيط\nآجل",
+			"insert_after": "custom_national_id",
+		},
+		{
+			"dt": "Customer",
+			"fieldname": "custom_notes",
+			"fieldtype": "Small Text",
+			"label": "ملاحظات",
+			"insert_after": "custom_payment_type",
+		},
+		# --- Item ---
+		{
+			"dt": "Item",
+			"fieldname": "custom_brand",
+			"fieldtype": "Data",
+			"label": "الماركة / العلامة التجارية",
+			"insert_after": "item_name",
+		},
+		{
+			"dt": "Item",
+			"fieldname": "custom_model",
+			"fieldtype": "Data",
+			"label": "الموديل",
+			"insert_after": "custom_brand",
+		},
+		{
+			"dt": "Item",
+			"fieldname": "custom_color",
+			"fieldtype": "Data",
+			"label": "اللون",
+			"insert_after": "custom_model",
+		},
+		{
+			"dt": "Item",
+			"fieldname": "custom_storage",
+			"fieldtype": "Data",
+			"label": "السعة التخزينية",
+			"insert_after": "custom_color",
+		},
+		{
+			"dt": "Item",
+			"fieldname": "custom_installment_interest",
+			"fieldtype": "Percent",
+			"label": "نسبة فائدة التقسيط الافتراضية (%)",
+			"insert_after": "custom_storage",
+			"default": "0",
+			"description": "تُستخدم كقيمة افتراضية عند تقسيط هذا الصنف",
+		},
+		{
+			"dt": "Item",
+			"fieldname": "custom_imei",
+			"fieldtype": "Data",
+			"label": "رقم IMEI (اختياري)",
+			"insert_after": "custom_installment_interest",
+		},
+		# --- Sales Invoice ---
+		{
+			"dt": "Sales Invoice",
+			"fieldname": "custom_payment_mode",
+			"fieldtype": "Select",
+			"label": "طريقة الدفع",
+			"options": "نقدي\nتقسيط\nآجل\nبطاقة",
+			"insert_after": "payment_terms_template",
+		},
+		{
+			"dt": "Sales Invoice",
+			"fieldname": "custom_installment_plan",
+			"fieldtype": "Link",
+			"options": "Installment Plan",
+			"label": "خطة التقسيط",
+			"insert_after": "custom_payment_mode",
+			"read_only": 1,
+		},
+		{
+			"dt": "Sales Invoice",
+			"fieldname": "custom_down_payment_received",
+			"fieldtype": "Currency",
+			"label": "الدفعة المقدمة المستلمة",
+			"insert_after": "custom_installment_plan",
+			"default": "0",
+		},
+		{
+			"dt": "Sales Invoice",
+			"fieldname": "custom_customer_whatsapp",
+			"fieldtype": "Data",
+			"label": "واتساب العميل",
+			"insert_after": "custom_down_payment_received",
+			"fetch_from": "customer.custom_whatsapp",
+			"read_only": 1,
+		},
+	]
+
+	created = 0
+	for f in fields:
+		field_name = f["dt"] + "-" + f["fieldname"]
+		if not frappe.db.exists("Custom Field", field_name):
+			try:
+				doc = frappe.get_doc({"doctype": "Custom Field", **f})
+				doc.insert(ignore_permissions=True)
+				created += 1
+			except Exception as e:
+				log_message(
+					f"Error creating custom field {field_name}: {str(e)}", level="error"
+				)
+
+	if not quiet:
+		log_message(f"Installment custom fields: {created} created", level="info")
 
 
 def setup_default_print_format(quiet=False):
