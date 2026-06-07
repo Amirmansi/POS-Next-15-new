@@ -6,7 +6,8 @@ frappe.ui.form.on("Customer", {
         // Hide non-essential sections for mobile shop workflow
         var essential_fields = [
             "customer_name", "customer_type", "customer_group", "territory",
-            "custom_mobile", "custom_whatsapp", "custom_address",
+            "custom_mobile", "custom_whatsapp", "custom_address_detail",
+            "custom_full_name_ar", "custom_national_id", "custom_id_image",
             "custom_payment_type", "custom_notes"
         ];
 

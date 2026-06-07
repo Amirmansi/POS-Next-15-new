@@ -7,6 +7,7 @@ frappe.ui.form.on("Item", {
         var essential_fields = [
             "item_name", "item_code", "item_group", "brand",
             "custom_brand", "custom_model", "custom_color", "custom_storage",
+            "custom_imei", "custom_installment_interest", "custom_company",
             "description", "image",
             "standard_rate", "valuation_rate",
             "is_stock_item", "opening_stock",
