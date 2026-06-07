@@ -491,6 +491,150 @@
 						</div>
 					</div>
 				</div>
+
+				<!-- ══════════════════════════════════════════ -->
+				<!-- Installment Panel — الدفع بالتقسيط        -->
+				<!-- ══════════════════════════════════════════ -->
+				<div v-if="!isSalesOrder" class="flex-shrink-0">
+					<!-- Toggle Button -->
+					<button
+						@click="toggleInstallment"
+						:class="[
+							'w-full flex items-center justify-between rounded-xl border-2 transition-all px-3',
+							isCompactMode ? 'py-2' : 'py-2.5',
+							isInstallmentEnabled
+								? 'bg-indigo-600 border-indigo-600'
+								: 'bg-white border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50'
+						]"
+					>
+						<div class="flex items-center gap-2 min-w-0">
+							<svg :class="['w-4 h-4 flex-shrink-0', isInstallmentEnabled ? 'text-indigo-200' : 'text-indigo-500']"
+								fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+									d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01M4 20h16a2 2 0 002-2V8a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+							</svg>
+							<span :class="['text-sm font-bold', isInstallmentEnabled ? 'text-white' : 'text-indigo-700']">
+								الدفع بالتقسيط
+							</span>
+							<span v-if="isInstallmentEnabled" class="text-xs text-indigo-200 font-medium truncate">
+								{{ installmentMonths }} شهر · {{ formatCurrency(installmentMonthlyAmount) }}/شهر
+							</span>
+						</div>
+						<div :class="[
+							'relative w-9 h-5 rounded-full transition-all flex-shrink-0 ms-2',
+							isInstallmentEnabled ? 'bg-indigo-400' : 'bg-indigo-100'
+						]">
+							<div :class="[
+								'absolute top-0.5 w-4 h-4 rounded-full transition-all shadow-sm',
+								isInstallmentEnabled ? 'right-0.5 bg-white' : 'left-0.5 bg-indigo-400'
+							]"></div>
+						</div>
+					</button>
+
+					<!-- Expanded Panel -->
+					<div v-if="isInstallmentEnabled"
+						class="mt-1.5 bg-gradient-to-br from-indigo-50 to-blue-50 border-2 border-indigo-200 rounded-xl overflow-hidden">
+						<div :class="['p-3 space-y-2.5', isCompactMode ? 'p-2 space-y-2' : '']">
+
+							<!-- Months + Interest Rate -->
+							<div class="grid grid-cols-2 gap-2">
+								<div>
+									<label class="text-[10px] font-bold text-indigo-700 uppercase tracking-wide block mb-1">عدد الأشهر</label>
+									<div class="grid grid-cols-3 gap-1 mb-1">
+										<button v-for="m in [6, 12, 24]" :key="m"
+											@click="installmentMonths = m"
+											:class="[
+												'h-7 text-xs font-bold rounded-lg transition-all border',
+												installmentMonths === m
+													? 'bg-indigo-600 border-indigo-600 text-white shadow-sm'
+													: 'bg-white border-indigo-200 text-indigo-600 hover:border-indigo-400'
+											]">{{ m }}</button>
+									</div>
+									<input type="number" v-model.number="installmentMonths"
+										min="1" max="60" step="1"
+										class="w-full h-8 text-center text-sm border-2 border-indigo-200 rounded-lg focus:border-indigo-500 focus:outline-none bg-white font-bold"
+										placeholder="أشهر" />
+								</div>
+								<div>
+									<label class="text-[10px] font-bold text-orange-600 uppercase tracking-wide block mb-1">نسبة الفائدة %</label>
+									<div class="grid grid-cols-3 gap-1 mb-1">
+										<button v-for="r in [0, 15, 25]" :key="r"
+											@click="installmentRate = r"
+											:class="[
+												'h-7 text-xs font-bold rounded-lg transition-all border',
+												installmentRate === r
+													? 'bg-orange-500 border-orange-500 text-white shadow-sm'
+													: 'bg-white border-orange-200 text-orange-600 hover:border-orange-400'
+											]">{{ r }}%</button>
+									</div>
+									<input type="number" v-model.number="installmentRate"
+										min="0" max="100" step="0.5"
+										class="w-full h-8 text-center text-sm border-2 border-orange-200 rounded-lg focus:border-orange-500 focus:outline-none bg-white font-bold"
+										placeholder="%" />
+								</div>
+							</div>
+
+							<!-- Down Payment -->
+							<div>
+								<label class="text-[10px] font-bold text-green-700 uppercase tracking-wide block mb-1">الدفعة المقدمة</label>
+								<div class="flex gap-1.5">
+									<input type="number" v-model.number="installmentDownPayment"
+										min="0" :max="grandTotal" step="50"
+										class="flex-1 h-9 text-center text-sm border-2 border-green-200 rounded-lg focus:border-green-500 focus:outline-none bg-white font-bold"
+										placeholder="0.00" />
+									<button v-if="installmentDownPayment > 0"
+										@click="addDownPaymentToEntries"
+										class="h-9 px-3 text-xs font-bold bg-green-500 text-white rounded-lg hover:bg-green-600 active:bg-green-700 flex-shrink-0 transition-all">
+										+ أضف
+									</button>
+								</div>
+							</div>
+
+							<!-- First Installment Date -->
+							<div>
+								<label class="text-[10px] font-bold text-indigo-700 uppercase tracking-wide block mb-1">تاريخ أول قسط</label>
+								<input type="date" v-model="installmentFirstDate" :min="today"
+									class="w-full h-9 text-sm border-2 border-indigo-200 rounded-lg px-2 focus:border-indigo-500 focus:outline-none bg-white" />
+							</div>
+
+							<!-- Calculations summary -->
+							<div class="bg-white border border-indigo-200 rounded-xl p-2.5" dir="rtl">
+								<div class="space-y-1">
+									<div class="flex items-center justify-between text-xs">
+										<span class="text-gray-500">المبلغ الممول</span>
+										<span class="font-bold text-gray-800">{{ formatCurrency(installmentFinancedAmount) }}</span>
+									</div>
+									<div class="flex items-center justify-between text-xs">
+										<span class="text-gray-500">الفائدة الإجمالية</span>
+										<span class="font-bold text-orange-600">+{{ formatCurrency(installmentTotalInterest) }}</span>
+									</div>
+									<div class="flex items-center justify-between text-xs border-t border-gray-100 pt-1">
+										<span class="text-gray-500">إجمالي التعاقد</span>
+										<span class="font-bold text-indigo-800">{{ formatCurrency(installmentTotalContract) }}</span>
+									</div>
+								</div>
+								<div class="mt-2 pt-2 border-t-2 border-indigo-200 flex items-center justify-between">
+									<span class="text-sm font-bold text-indigo-900">القسط الشهري</span>
+									<div class="text-right">
+										<div class="text-base font-black text-indigo-700">{{ formatCurrency(installmentMonthlyAmount) }}</div>
+										<div class="text-[10px] text-gray-400">لمدة {{ installmentMonths }} شهر</div>
+									</div>
+								</div>
+							</div>
+
+							<!-- Hint -->
+							<div class="text-center text-xs text-indigo-600 font-medium">
+								<template v-if="installmentDownPayment > 0">
+									ادفع الآن <span class="font-black text-green-600">{{ formatCurrency(installmentDownPayment) }}</span>
+									← ثم {{ installmentMonths }} قسط شهري
+								</template>
+								<template v-else>
+									بدون دفعة مقدمة · كامل المبلغ على {{ installmentMonths }} قسط
+								</template>
+							</div>
+						</div>
+					</div>
+				</div>
 				<!-- End Left Column -->
 
 				<!-- Right Column (3/5): Payment Methods + Quick Amounts + Numpad -->
@@ -1070,6 +1214,62 @@ const walletPaymentMethods = ref(new Set()) // Set of mode_of_payment names that
 const deliveryDate = ref("")
 const today = new Date().toISOString().split("T")[0]
 const isSalesOrder = computed(() => props.targetDoctype === "Sales Order")
+
+// ─── Installment State ────────────────────────────────────────────────────────
+const isInstallmentEnabled = ref(false)
+const installmentMonths = ref(12)
+const installmentRate = ref(0)
+const installmentDownPayment = ref(0)
+const installmentFirstDate = ref("")
+
+const installmentFinancedAmount = computed(() => {
+	const dp = Math.min(Math.max(0, installmentDownPayment.value || 0), props.grandTotal)
+	return Math.max(0, props.grandTotal - dp)
+})
+const installmentTotalInterest = computed(() =>
+	installmentFinancedAmount.value * ((installmentRate.value || 0) / 100)
+)
+const installmentTotalContract = computed(() =>
+	installmentFinancedAmount.value + installmentTotalInterest.value
+)
+const installmentMonthlyAmount = computed(() => {
+	const m = installmentMonths.value || 1
+	return m > 0 ? roundCurrency(installmentTotalContract.value / m) : 0
+})
+
+function toggleInstallment() {
+	isInstallmentEnabled.value = !isInstallmentEnabled.value
+	if (isInstallmentEnabled.value && !installmentFirstDate.value) {
+		const d = new Date()
+		d.setMonth(d.getMonth() + 1)
+		d.setDate(1)
+		installmentFirstDate.value = d.toISOString().split("T")[0]
+	}
+}
+
+function addDownPaymentToEntries() {
+	if (!installmentDownPayment.value || installmentDownPayment.value <= 0) return
+	if (!lastSelectedMethod.value) {
+		showWarning(__("Please select a payment method first"))
+		return
+	}
+	addCustomPayment(lastSelectedMethod.value, installmentDownPayment.value)
+}
+
+function buildInstallmentData() {
+	return {
+		is_installment_sale: 1,
+		months: installmentMonths.value,
+		interest_rate: installmentRate.value,
+		down_payment: installmentDownPayment.value,
+		first_date: installmentFirstDate.value || today,
+		financed_amount: installmentFinancedAmount.value,
+		total_interest: installmentTotalInterest.value,
+		total_contract: installmentTotalContract.value,
+		monthly_amount: installmentMonthlyAmount.value,
+	}
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 // Column refs for height matching
 const rightColumnRef = ref(null)
@@ -1776,6 +1976,14 @@ const canComplete = computed(() => {
 	// Check sales person validation first (mandatory when enabled)
 	if (!isSalesPersonValid.value) return false
 
+	// ── Installment mode: special rules ───────────────────────────────────────
+	if (isInstallmentEnabled.value) {
+		// Zero down payment → full credit installment, always completeable
+		if (installmentDownPayment.value <= 0) return true
+		// Down payment > 0 → must have paid at least that amount
+		return totalPaid.value >= roundCurrency(installmentDownPayment.value)
+	}
+
 	// Overpayment with cash is allowed — cashier hands back the change
 	if (changeAmount.value > 0 && !allowsOverpayment.value) return false
 
@@ -1872,6 +2080,12 @@ watch(show, (newVal) => {
 		selectedSalesPersons.value = []
 		salesPersonSearch.value = ""
 		applyWriteOff.value = false // Reset write-off state
+		// Reset installment state
+		isInstallmentEnabled.value = false
+		installmentMonths.value = 12
+		installmentRate.value = 0
+		installmentDownPayment.value = 0
+		installmentFirstDate.value = ""
 		// Set default delivery date to today for Sales Orders
 		deliveryDate.value = isSalesOrder.value ? today : ""
 
@@ -2254,14 +2468,8 @@ function completePayment() {
 		canComplete: canComplete.value,
 		totalPaid: totalPaid.value,
 		grandTotal: props.grandTotal,
-		allowPartialPayment: props.allowPartialPayment,
-		paymentEntries: paymentEntries.value,
-		salesPersons: selectedSalesPersons.value,
-		writeOff: {
-			canWriteOff: canWriteOff.value,
-			applyWriteOff: applyWriteOff.value,
-			writeOffAmount: writeOffAmount.value,
-		},
+		isInstallment: isInstallmentEnabled.value,
+		installmentMonths: installmentMonths.value,
 	})
 
 	if (!canComplete.value) {
@@ -2269,18 +2477,41 @@ function completePayment() {
 		return
 	}
 
+	// ── Installment: zero down payment (full credit installment) ──────────────
+	if (isInstallmentEnabled.value && installmentDownPayment.value <= 0) {
+		const paymentData = {
+			payments: [],
+			change_amount: 0,
+			is_partial_payment: false,
+			is_credit_sale: true,
+			paid_amount: 0,
+			outstanding_amount: props.grandTotal,
+			sales_team: selectedSalesPersons.value.length > 0 ? selectedSalesPersons.value : null,
+			delivery_date: null,
+			write_off_amount: 0,
+			is_write_off: false,
+			installment_data: buildInstallmentData(),
+		}
+		log.debug("[PaymentDialog] Emitting installment (no down payment):", paymentData)
+		emit("payment-completed", paymentData)
+		show.value = false
+		return
+	}
+
 	// Safety: block non-cash overpayment (cash overpayment with change is allowed)
-	if (changeAmount.value > 0 && !allowsOverpayment.value) {
+	if (changeAmount.value > 0 && !allowsOverpayment.value && !isInstallmentEnabled.value) {
 		log.warn("[PaymentDialog] Cannot complete - overpayment detected without cash")
 		return
 	}
 
 	// Calculate if this is a partial payment (considering write-off)
 	const effectivePaid = totalPaid.value + writeOffAmount.value
-	const isPartial = effectivePaid < props.grandTotal
+	// Installment sales are always partial (unless full down payment)
+	const isPartial = isInstallmentEnabled.value
+		? roundCurrency(totalPaid.value) < roundCurrency(props.grandTotal)
+		: effectivePaid < props.grandTotal
 
 	// When overpaying with cash, the accounting paid_amount must equal grand_total
-	// The actual cash received (totalPaid) may be higher — the surplus is change
 	const accountingPaidAmount = changeAmount.value > 0
 		? roundCurrency(props.grandTotal)
 		: totalPaid.value
@@ -2291,7 +2522,7 @@ function completePayment() {
 		is_partial_payment: isPartial,
 		paid_amount: accountingPaidAmount,
 		outstanding_amount: isPartial
-			? remainingAmount.value - writeOffAmount.value
+			? roundCurrency(props.grandTotal - accountingPaidAmount)
 			: 0,
 		sales_team:
 			selectedSalesPersons.value.length > 0 ? selectedSalesPersons.value : null,
@@ -2299,6 +2530,8 @@ function completePayment() {
 		// Write-off data
 		write_off_amount: writeOffAmount.value,
 		is_write_off: writeOffAmount.value > 0,
+		// Installment data (null when not an installment sale)
+		installment_data: isInstallmentEnabled.value ? buildInstallmentData() : null,
 	}
 
 	log.debug("[PaymentDialog] Emitting payment-completed:", paymentData)

@@ -118,11 +118,18 @@ fixtures = [
 				"name",
 				"in",
 				[
-					"POS Next Receipt"
+					"POS Next Receipt",
+					"Installment Invoice AR"
 				]
 			]
 		]
 	},
+    {
+        "dt": "Workspace",
+        "filters": [
+            ["name", "in", ["POSNext"]]
+        ]
+    },
     {
         "dt": "Role",
         "filters": [

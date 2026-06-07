@@ -2875,3 +2875,92 @@ def apply_offers(invoice_data, selected_offers=None):
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Apply Offers Error")
         frappe.throw(_("Error applying offers: {0}").format(str(e)))
+
+
+# ============================================================
+# Installment Schedule
+# ============================================================
+
+@frappe.whitelist()
+def create_installment_schedule(invoice_name, installment_data):
+    """
+    Generate an installment schedule for a submitted Sales Invoice.
+    Called from POS after successful invoice submission.
+    """
+    if isinstance(installment_data, str):
+        installment_data = json.loads(installment_data)
+
+    invoice = frappe.get_doc("Sales Invoice", invoice_name)
+    _generate_installment_schedule(invoice, installment_data)
+    return {"success": True, "invoice": invoice_name}
+
+
+def _generate_installment_schedule(invoice_doc, installment_data):
+    """
+    Write installment parameters + schedule rows onto the Sales Invoice.
+    Uses custom fields added by install.py.
+    """
+    from frappe.utils import add_months, getdate
+
+    months       = cint(installment_data.get("months") or 12)
+    interest_rate = flt(installment_data.get("interest_rate") or 0)
+    down_payment  = flt(installment_data.get("down_payment") or 0)
+    first_date    = installment_data.get("first_date") or nowdate()
+    financed      = flt(installment_data.get("financed_amount") or
+                        flt(invoice_doc.grand_total) - down_payment)
+    total_interest = flt(installment_data.get("total_interest") or
+                         financed * interest_rate / 100)
+    total_contract = financed + total_interest
+    monthly        = flt(installment_data.get("monthly_amount") or
+                         (total_contract / months if months else 0))
+
+    # ── Save summary fields on the invoice ────────────────────────────────────
+    update_dict = {
+        "custom_is_installment_sale":   1,
+        "custom_installment_months":    months,
+        "custom_installment_interest_rate": interest_rate,
+        "custom_installment_down_payment":  down_payment,
+        "custom_installment_first_date":    first_date,
+        "custom_installment_total_interest": total_interest,
+        "custom_installment_total_contract": total_contract,
+        "custom_installment_monthly_amount": monthly,
+        "custom_payment_mode":          "تقسيط",
+    }
+    try:
+        frappe.db.set_value("Sales Invoice", invoice_doc.name, update_dict,
+                            update_modified=False)
+    except Exception:
+        pass  # field may not exist on older migrations
+
+    # ── Generate schedule rows ─────────────────────────────────────────────────
+    # Delete any existing rows
+    frappe.db.delete("Installment Schedule", {
+        "parent": invoice_doc.name,
+        "parenttype": "Sales Invoice",
+    })
+
+    paid_so_far = 0.0
+    for i in range(1, months + 1):
+        due_date = add_months(getdate(first_date), i - 1)
+        if i == months:
+            amount = round(total_contract - paid_so_far, 2)
+        else:
+            amount = round(monthly, 2)
+
+        frappe.get_doc({
+            "doctype":      "Installment Schedule",
+            "parent":       invoice_doc.name,
+            "parenttype":   "Sales Invoice",
+            "parentfield":  "custom_installment_schedule",
+            "idx":          i,
+            "installment_number": i,
+            "due_date":     due_date,
+            "amount":       amount,
+            "paid_amount":  0,
+            "remaining_amount": amount,
+            "status":       "مستحق",
+        }).db_insert()
+
+        paid_so_far += amount
+
+    frappe.db.commit()

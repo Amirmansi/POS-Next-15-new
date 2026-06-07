@@ -1005,7 +1005,7 @@ import { cacheInvoiceHistory, getCachedInvoiceHistory } from "@/utils/offline/sy
 import { printInvoice, printInvoiceByName, printWithSilentFallback } from "@/utils/printInvoice";
 import { qzConnected, connect as qzConnect, disconnect as qzDisconnect } from "@/utils/qzTray";
 
-import { Button, Dialog, createResource } from "frappe-ui";
+import { Button, Dialog, createResource, call } from "frappe-ui";
 import { call } from "@/utils/apiWrapper";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useToast } from "@/composables/useToast";
@@ -2029,6 +2029,16 @@ async function handlePaymentCompleted(paymentData) {
 				const invoiceName = result.name || result.message?.name || __("Unknown");
 				const invoiceTotal = result.grand_total || result.total || 0;
 				const paidAmount = paymentData.paid_amount || invoiceTotal;
+
+				// Create installment schedule if applicable (non-blocking)
+				if (paymentData.installment_data && invoiceName !== __("Unknown")) {
+					call("pos_next.api.invoices.create_installment_schedule", {
+						invoice_name: invoiceName,
+						installment_data: JSON.stringify(paymentData.installment_data),
+					}).catch((err) =>
+						log.error("[POS] Installment schedule creation failed:", err)
+					)
+				}
 
 				uiStore.showPaymentDialog = false;
 				cartStore.clearCart();
