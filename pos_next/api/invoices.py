@@ -2964,3 +2964,118 @@ def _generate_installment_schedule(invoice_doc, installment_data):
         paid_so_far += amount
 
     frappe.db.commit()
+
+
+@frappe.whitelist()
+def create_installment_payment_entry(invoice_name, installment_number, amount):
+    """
+    Create a Payment Entry for a specific installment, then update
+    the Installment Schedule row (mark as paid).
+    """
+    from frappe.utils import today, flt, cint
+
+    invoice = frappe.get_doc("Sales Invoice", invoice_name)
+    if invoice.docstatus != 1:
+        frappe.throw(_("الفاتورة غير مكتملة"))
+    if not invoice.get("custom_is_installment_sale"):
+        frappe.throw(_("هذه الفاتورة ليست بيع تقسيط"))
+
+    installment_number = cint(installment_number)
+    amount = flt(amount)
+    if amount <= 0:
+        frappe.throw(_("المبلغ يجب أن يكون أكبر من صفر"))
+
+    # Find the installment schedule row
+    schedule_rows = frappe.db.get_all(
+        "Installment Schedule",
+        filters={
+            "parent": invoice_name,
+            "parenttype": "Sales Invoice",
+            "installment_number": installment_number,
+        },
+        fields=["name", "amount", "paid_amount", "remaining_amount", "status"],
+    )
+    if not schedule_rows:
+        frappe.throw(_("لم يتم العثور على القسط رقم {0}").format(installment_number))
+
+    schedule_row = schedule_rows[0]
+    if schedule_row.status == "مدفوع":
+        frappe.throw(_("هذا القسط مدفوع بالفعل"))
+
+    # Get payment account from POS Profile or default receivable
+    company = invoice.company
+    receivable_account = frappe.get_cached_value("Company", company, "default_receivable_account")
+
+    # Try to get cash account from POS Profile
+    cash_account = None
+    if invoice.pos_profile:
+        try:
+            pos_profile = frappe.get_cached_doc("POS Profile", invoice.pos_profile)
+            if pos_profile.get("posa_cash_mode_of_payment"):
+                mop_account = frappe.db.get_value(
+                    "Mode of Payment Account",
+                    {"parent": pos_profile.posa_cash_mode_of_payment, "company": company},
+                    "default_account"
+                )
+                cash_account = mop_account
+        except Exception:
+            pass
+
+    if not cash_account:
+        # Fallback: use first cash account from Mode of Payment
+        mops = frappe.get_all("Mode of Payment", filters={"type": "Cash"}, limit=1)
+        if mops:
+            mop_account = frappe.db.get_value(
+                "Mode of Payment Account",
+                {"parent": mops[0].name, "company": company},
+                "default_account"
+            )
+            cash_account = mop_account
+
+    if not cash_account:
+        frappe.throw(_("لم يتم العثور على حساب النقد. يرجى إعداد طريقة الدفع النقدي"))
+
+    # Create Payment Entry
+    pe = frappe.new_doc("Payment Entry")
+    pe.payment_type = "Receive"
+    pe.posting_date = today()
+    pe.company = company
+    pe.party_type = "Customer"
+    pe.party = invoice.customer
+    pe.party_name = invoice.customer_name
+    pe.paid_from = receivable_account
+    pe.paid_to = cash_account
+    pe.paid_amount = amount
+    pe.received_amount = amount
+    pe.reference_no = f"{invoice_name}-Q{installment_number}"
+    pe.reference_date = today()
+    pe.remarks = f"تحصيل القسط رقم {installment_number} - الفاتورة {invoice_name}"
+    pe.append("references", {
+        "reference_doctype": "Sales Invoice",
+        "reference_name": invoice_name,
+        "allocated_amount": amount,
+    })
+    pe.flags.ignore_permissions = True
+    pe.save()
+    pe.submit()
+
+    # Update the installment schedule row
+    new_paid = flt(schedule_row.paid_amount) + amount
+    new_remaining = max(0, flt(schedule_row.amount) - new_paid)
+    new_status = "مدفوع" if new_remaining <= 0.01 else "مستحق"
+
+    frappe.db.set_value(
+        "Installment Schedule",
+        schedule_row.name,
+        {
+            "paid_amount": new_paid,
+            "remaining_amount": new_remaining,
+            "status": new_status,
+            "payment_entry": pe.name,
+            "payment_date": today(),
+        },
+        update_modified=False,
+    )
+    frappe.db.commit()
+
+    return {"payment_entry": pe.name, "status": new_status}

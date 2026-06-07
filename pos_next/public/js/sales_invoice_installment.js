@@ -1,71 +1,104 @@
+// Sales Invoice - Installment Management JS
+// Adds a "تحصيل قسط" button in the Installment Schedule child table
+// and hides non-essential fields for a mobile shop workflow
+
 frappe.ui.form.on("Sales Invoice", {
-	refresh: function (frm) {
-		if (frm.doc.docstatus === 1 && frm.doc.custom_payment_mode === "تقسيط") {
-			if (!frm.doc.custom_installment_plan) {
-				frm.add_custom_button(
-					__("إنشاء خطة تقسيط"),
-					function () {
-						frappe.new_doc("Installment Plan", {
-							sales_invoice: frm.doc.name,
-							customer: frm.doc.customer,
-							invoice_amount: frm.doc.grand_total,
-						});
-					},
-					__("التقسيط")
-				);
-			} else {
-				frm.add_custom_button(
-					__("عرض خطة التقسيط"),
-					function () {
-						frappe.set_route("Form", "Installment Plan", frm.doc.custom_installment_plan);
-					},
-					__("التقسيط")
-				);
-			}
-		}
+    refresh: function(frm) {
+        // Only on submitted installment invoices
+        if (frm.doc.docstatus !== 1 || !frm.doc.custom_is_installment_sale) return;
 
-		if (frm.doc.custom_customer_whatsapp) {
-			frm.add_custom_button(__("تواصل واتساب"), function () {
-				let phone = frm.doc.custom_customer_whatsapp.replace(/[^0-9]/g, "");
-				if (phone.startsWith("0")) phone = "2" + phone;
-				let msg = encodeURIComponent(
-					`مرحباً ${frm.doc.customer_name}،\n` +
-						`نذكركم بفاتورة رقم: ${frm.doc.name}\n` +
-						`الإجمالي: ${frappe.format(frm.doc.grand_total, { fieldtype: "Currency" })} ج.م\n` +
-						`شكراً لتعاملكم مع متجرنا 🙏`
-				);
-				window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
-			});
-		}
-	},
+        // Refresh the child table to show collection buttons
+        frm.fields_dict["custom_installment_schedule"].grid.refresh();
+    },
 
-	custom_payment_mode: function (frm) {
-		if (frm.doc.custom_payment_mode === "تقسيط") {
-			frappe.msgprint({
-				title: __("تنبيه"),
-				message: __(
-					"تم تحديد البيع بالتقسيط. بعد حفظ الفاتورة، قم بإنشاء خطة التقسيط من الزر المخصص."
-				),
-				indicator: "blue",
-			});
-		}
-	},
-
-	customer: function (frm) {
-		if (frm.doc.customer) {
-			frappe.db.get_value(
-				"Customer",
-				frm.doc.customer,
-				["custom_whatsapp", "custom_mobile", "custom_payment_type"],
-				function (r) {
-					if (r) {
-						frm.set_value("custom_customer_whatsapp", r.custom_whatsapp || r.custom_mobile);
-						if (r.custom_payment_type) {
-							frm.set_value("custom_payment_mode", r.custom_payment_type);
-						}
-					}
-				}
-			);
-		}
-	},
+    onload: function(frm) {
+        setup_installment_grid(frm);
+    },
 });
+
+frappe.ui.form.on("Installment Schedule", {
+    form_render: function(frm, cdt, cdn) {
+        var row = frappe.get_doc(cdt, cdn);
+        var wrapper = frm.fields_dict["custom_installment_schedule"].grid.get_field("status");
+
+        // Only show on submitted docs
+        if (frm.doc.docstatus !== 1 || !frm.doc.custom_is_installment_sale) return;
+        if (row.status === "مدفوع") return;
+
+        var today = frappe.datetime.get_today();
+        var is_due = row.due_date <= today;
+
+        // Find the first unpaid installment
+        var schedule = frm.doc.custom_installment_schedule || [];
+        var unpaid = schedule.filter(r => r.status !== "مدفوع").sort((a, b) => a.installment_number - b.installment_number);
+        var is_next = unpaid.length > 0 && unpaid[0].name === row.name;
+
+        if (!is_due && !is_next) return;
+
+        // Add collect button
+        var grid_row = frm.fields_dict["custom_installment_schedule"].grid.grid_rows_by_docname[cdn];
+        if (!grid_row || grid_row.$row.find(".btn-collect-installment").length) return;
+
+        var $btn = $(`
+            <button class="btn btn-xs btn-success btn-collect-installment"
+                style="margin-top:4px; font-weight:bold; font-size:12px; padding:3px 10px;">
+                💰 تحصيل قسط ${row.installment_number}
+            </button>
+        `);
+
+        $btn.on("click", function(e) {
+            e.stopPropagation();
+            collect_installment(frm, row);
+        });
+
+        grid_row.$row.find(".data-row").append($btn);
+    }
+});
+
+function setup_installment_grid(frm) {
+    if (!frm.fields_dict["custom_installment_schedule"]) return;
+
+    var grid = frm.fields_dict["custom_installment_schedule"].grid;
+    grid.cannot_add_rows = true;
+    grid.cannot_delete_rows = frm.doc.docstatus === 1;
+}
+
+function collect_installment(frm, row) {
+    var remaining = flt(row.remaining_amount);
+    if (remaining <= 0) {
+        frappe.msgprint(__("هذا القسط مدفوع بالفعل"));
+        return;
+    }
+
+    frappe.confirm(
+        `<b>تحصيل القسط رقم ${row.installment_number}</b><br>
+         المبلغ: <b>${format_currency(remaining, frm.doc.currency)}</b><br>
+         الفاتورة: <b>${frm.doc.name}</b><br><br>
+         هل تريد إنشاء سند تحصيل؟`,
+        function() {
+            create_payment_entry(frm, row, remaining);
+        }
+    );
+}
+
+function create_payment_entry(frm, row, amount) {
+    frappe.call({
+        method: "pos_next.api.invoices.create_installment_payment_entry",
+        args: {
+            invoice_name: frm.doc.name,
+            installment_number: row.installment_number,
+            amount: amount,
+        },
+        freeze: true,
+        freeze_message: __("جارٍ إنشاء سند التحصيل..."),
+        callback: function(r) {
+            if (r.message && r.message.payment_entry) {
+                frappe.show_alert({
+                    message: `تم إنشاء سند التحصيل: <b>${r.message.payment_entry}</b>`,
+                    indicator: "green"
+                }, 5);
+                frm.reload_doc();
+            }
+        }
+    });
+}
