@@ -215,6 +215,9 @@ def _get_pos_settings(pos_profile_doc):
 			pos_profile_doc.write_off_account and (pos_profile_doc.write_off_limit or 0) > 0
 		) else 0
 		settings["disable_rounded_total"] = pos_profile_doc.disable_rounded_total or 0
+		# UI customization flags from POS Profile custom fields
+		settings["posa_hide_qty_badge"] = pos_profile_doc.get("posa_hide_qty_badge") or 0
+		settings["posa_enable_whatsapp_web"] = pos_profile_doc.get("posa_enable_whatsapp_web") or 0
 
 		return settings
 	except Exception:

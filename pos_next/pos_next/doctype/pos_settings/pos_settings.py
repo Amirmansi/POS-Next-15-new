@@ -122,6 +122,15 @@ def get_pos_settings(pos_profile):
 		frappe.db.get_single_value("Stock Settings", "allow_negative_stock") or 0
 	)
 
+	# Inject UI customization flags from POS Profile custom fields
+	pos_profile_flags = frappe.db.get_value(
+		"POS Profile", pos_profile,
+		["posa_hide_qty_badge", "posa_enable_whatsapp_web"],
+		as_dict=True
+	) or {}
+	settings["posa_hide_qty_badge"] = cint(pos_profile_flags.get("posa_hide_qty_badge") or 0)
+	settings["posa_enable_whatsapp_web"] = cint(pos_profile_flags.get("posa_enable_whatsapp_web") or 0)
+
 	return settings
 
 
