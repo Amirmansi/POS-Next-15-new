@@ -259,11 +259,11 @@
 					</div>
 
 					<!-- Invoice Summary -->
-					<div class="bg-white rounded-lg border border-gray-200 overflow-hidden flex flex-col flex-1 min-h-0">
+					<div class="bg-white rounded-xl border-2 border-gray-200 overflow-hidden flex flex-col flex-1 min-h-0">
 						<!-- Header -->
 						<div :class="['px-3 border-b border-gray-200 bg-gray-50', isCompactMode ? 'py-1.5' : 'py-2']">
 							<div class="flex items-center justify-between">
-								<h3 :class="['text-gray-900 font-semibold text-start', dynamicTextSize.header]">{{ __('Invoice Summary') }}</h3>
+								<h3 :class="['text-gray-900 font-extrabold text-start', dynamicTextSize.header]">{{ __('Invoice Summary') }}</h3>
 								<span class="text-gray-500 text-xs text-end">{{ items.length === 1 ? __('1 item') : __('{0} items', [items.length]) }}</span>
 							</div>
 							<div v-if="customer" class="text-gray-600 text-xs mt-0.5 text-start">
@@ -281,7 +281,7 @@
 								<!-- Main Item -->
 								<div class="flex items-start justify-between gap-2">
 									<div class="flex-1 min-w-0 text-start">
-										<div :class="['font-medium text-sm truncate', item.is_free_item ? 'text-green-700' : 'text-gray-900']">{{ item.item_name || item.item_code }}<span v-if="item.is_free_item" class="text-xs font-bold"> ({{ __('Free') }})</span></div>
+										<div :class="['font-bold text-sm truncate', item.is_free_item ? 'text-green-700' : 'text-gray-900']">{{ item.item_name || item.item_code }}<span v-if="item.is_free_item" class="text-xs font-bold"> ({{ __('Free') }})</span></div>
 										<div class="text-xs text-gray-500 mt-0.5">
 											{{ formatCurrency(item.rate || item.price_list_rate) }} × {{ item.qty || item.quantity }}
 										</div>
@@ -409,7 +409,7 @@
 							<!-- Grand Total -->
 							<div class="flex items-center justify-between pt-2 mt-1 border-t border-gray-300">
 								<span :class="['font-bold text-gray-900 text-start', isCompactMode ? 'text-sm' : 'text-base']">{{ __('Grand Total') }}</span>
-								<span :class="['font-bold text-gray-900 text-end', dynamicTextSize.grandTotal]">{{ formatCurrency(grandTotal) }}</span>
+								<span :class="['font-extrabold text-gray-900 text-end', dynamicTextSize.grandTotal]">{{ formatCurrency(grandTotal) }}</span>
 							</div>
 						</div>
 
@@ -418,33 +418,33 @@
 							<div class="grid grid-cols-2 divide-x divide-gray-200">
 								<!-- Paid (Left Half) -->
 								<div :class="['bg-blue-50 text-center', isCompactMode ? 'p-2' : 'p-3']">
-									<div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">{{ __('Paid') }}</div>
-									<div :class="['font-bold text-blue-600', dynamicTextSize.amount]">{{ formatCurrency(totalPaid) }}</div>
+									<div class="text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">{{ __('Paid') }}</div>
+									<div :class="['font-extrabold text-blue-900', dynamicTextSize.amount]">{{ formatCurrency(totalPaid) }}</div>
 								</div>
 								<!-- Remaining / Change (Right Half) -->
 								<div v-if="remainingAmount > 0 && !applyWriteOff" :class="['bg-orange-50 text-center', isCompactMode ? 'p-2' : 'p-3']">
-									<div class="text-xs font-medium text-orange-600 uppercase tracking-wide mb-1">{{ __('Remaining') }}</div>
-									<div :class="['font-bold text-orange-600', dynamicTextSize.amount]">{{ formatCurrency(remainingAmount) }}</div>
+									<div class="text-xs font-bold text-orange-800 uppercase tracking-wide mb-1">{{ __('Remaining') }}</div>
+									<div :class="['font-extrabold text-orange-900', dynamicTextSize.amount]">{{ formatCurrency(remainingAmount) }}</div>
 								</div>
 								<!-- Write-off Applied -->
 								<div v-else-if="applyWriteOff && canWriteOff" :class="['bg-purple-50 text-center', isCompactMode ? 'p-2' : 'p-3']">
-									<div class="text-xs font-medium text-purple-600 uppercase tracking-wide mb-1">{{ __('Write Off') }}</div>
-									<div :class="['font-bold text-purple-600', dynamicTextSize.amount]">{{ formatCurrency(writeOffAmount) }}</div>
+									<div class="text-xs font-bold text-purple-700 uppercase tracking-wide mb-1">{{ __('Write Off') }}</div>
+									<div :class="['font-extrabold text-purple-900', dynamicTextSize.amount]">{{ formatCurrency(writeOffAmount) }}</div>
 								</div>
 								<div v-else-if="changeAmount > 0 && allowsOverpayment" :class="['bg-green-50 text-center', isCompactMode ? 'p-2' : 'p-3']">
-									<div class="text-xs font-medium text-green-600 uppercase tracking-wide mb-1">{{ __('Change Due') }}</div>
-									<div :class="['font-bold text-green-600', dynamicTextSize.amount]">{{ formatCurrency(changeAmount) }}</div>
+									<div class="text-xs font-bold text-green-700 uppercase tracking-wide mb-1">{{ __('Change Due') }}</div>
+									<div :class="['font-extrabold text-green-900', dynamicTextSize.amount]">{{ formatCurrency(changeAmount) }}</div>
 								</div>
 								<!-- Exact Amount Warning (when overpayment not allowed) -->
 								<div v-else-if="changeAmount > 0 && !allowsOverpayment" :class="['bg-red-50 text-center', isCompactMode ? 'p-2' : 'p-3']">
-									<div class="text-xs font-medium text-red-600 uppercase tracking-wide mb-1">{{ __('Overpayment') }}</div>
-									<div :class="['font-bold text-red-600', dynamicTextSize.amount]">{{ formatCurrency(changeAmount) }}</div>
+									<div class="text-xs font-bold text-red-700 uppercase tracking-wide mb-1">{{ __('Overpayment') }}</div>
+									<div :class="['font-extrabold text-red-900', dynamicTextSize.amount]">{{ formatCurrency(changeAmount) }}</div>
 								</div>
 								<div v-else :class="['bg-green-50 flex flex-col items-center justify-center', isCompactMode ? 'p-2' : 'p-3']">
 									<svg class="w-5 h-5 text-green-600 mb-1" fill="currentColor" viewBox="0 0 20 20">
 										<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
 									</svg>
-									<span :class="['font-bold text-green-600', dynamicTextSize.body]">{{ __('Fully Paid') }}</span>
+									<span :class="['font-extrabold text-green-900', dynamicTextSize.body]">{{ __('Fully Paid') }}</span>
 								</div>
 							</div>
 						</div>
@@ -465,7 +465,7 @@
 								<div class="absolute inset-0 flex items-center justify-center z-10">
 									<span
 										class="text-base font-semibold tracking-wide"
-										:class="applyWriteOff ? 'text-white' : 'text-gray-700'"
+										:class="applyWriteOff ? 'text-teal-950 font-extrabold' : 'text-gray-900 font-bold'"
 									>
 										{{ formatCurrency(remainingAmount) }}
 									</span>
@@ -503,7 +503,7 @@
 							'w-full flex items-center justify-between rounded-xl border-2 transition-all px-3',
 							isCompactMode ? 'py-2' : 'py-2.5',
 							isInstallmentEnabled
-								? 'bg-indigo-600 border-indigo-600'
+								? 'bg-indigo-100 border-indigo-600'
 								: 'bg-white border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50'
 						]"
 					>
@@ -513,16 +513,16 @@
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
 									d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01M4 20h16a2 2 0 002-2V8a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z"/>
 							</svg>
-							<span :class="['text-sm font-bold', isInstallmentEnabled ? 'text-white' : 'text-indigo-700']">
+							<span :class="['text-sm font-bold', isInstallmentEnabled ? 'text-indigo-950 font-black' : 'text-indigo-700 font-bold']">
 								الدفع بالتقسيط
 							</span>
-							<span v-if="isInstallmentEnabled" class="text-xs text-indigo-200 font-medium truncate">
+							<span v-if="isInstallmentEnabled" class="text-xs text-indigo-700 font-bold truncate">
 								{{ installmentMonths }} شهر · {{ formatCurrency(installmentMonthlyAmount) }}/شهر
 							</span>
 						</div>
 						<div :class="[
 							'relative w-9 h-5 rounded-full transition-all flex-shrink-0 ms-2',
-							isInstallmentEnabled ? 'bg-indigo-400' : 'bg-indigo-100'
+							isInstallmentEnabled ? 'bg-indigo-600' : 'bg-indigo-200'
 						]">
 							<div :class="[
 								'absolute top-0.5 w-4 h-4 rounded-full transition-all shadow-sm',
@@ -641,7 +641,7 @@
 				<div
 					ref="rightColumnRef"
 					:class="[
-						'lg:col-span-3 bg-gray-50 rounded-lg border border-gray-200 flex flex-col',
+						'lg:col-span-3 bg-white rounded-xl border-2 border-gray-200 flex flex-col',
 						isSmallMobile ? 'p-1.5' : 'p-2 lg:p-3'
 					]"
 					:style="isMobileView ? {} : { minHeight: rightColumnMinHeight }"
@@ -649,7 +649,7 @@
 					<!-- Payment Methods -->
 					<div :class="isSmallMobile ? 'mb-1' : 'mb-1.5 lg:mb-3'">
 						<div :class="['flex items-center justify-between', isSmallMobile ? 'mb-0.5' : 'mb-1 lg:mb-2']">
-							<div :class="['text-start font-semibold text-gray-500 uppercase tracking-wide', isSmallMobile ? 'text-[10px]' : 'text-xs']">{{ __('Payment Method') }}</div>
+							<div :class="['text-start font-bold text-gray-800 uppercase tracking-wide', isSmallMobile ? 'text-[10px]' : 'text-xs']">{{ __('Payment Method') }}</div>
 							<!-- Clear All Payments Button -->
 							<button
 								v-if="paymentEntries.length > 0"
@@ -758,11 +758,11 @@
 								@click="addCustomPayment(lastSelectedMethod, amount)"
 								:disabled="isQuickAmountDisabled(amount)"
 								:class="[
-									'font-semibold rounded-lg border-2 transition-all',
+									'font-bold rounded-lg border-2 transition-all',
 									isCompactMode ? 'px-2 py-2 text-sm' : 'px-2 py-2 text-sm',
 									isQuickAmountDisabled(amount)
 										? 'bg-gray-50 border-gray-100 text-gray-300 cursor-not-allowed'
-										: 'bg-white border-gray-200 hover:border-blue-400 hover:bg-blue-50 text-gray-700 hover:text-blue-600'
+										: 'bg-white border-gray-200 hover:border-blue-400 hover:bg-blue-50 text-gray-900 hover:text-blue-600'
 								]"
 							>
 								{{ formatCurrency(amount) }}
@@ -846,13 +846,13 @@
 						<!-- Mobile Action Buttons - Always visible at bottom -->
 						<div :class="['flex-shrink-0', isSmallMobile ? 'space-y-1' : 'space-y-1.5']">
 							<!-- Two buttons side by side when both needed -->
-							<div v-if="lastSelectedMethod && remainingAmount > 0 && allowCreditSale && paymentEntries.length === 0"
+							<div v-if="lastSelectedMethod && remainingAmount > 0 && allowCreditSale && paymentEntries.length === 0 && !isInstallmentEnabled"
 								class="grid grid-cols-2" :class="isSmallMobile ? 'gap-1' : 'gap-1.5'">
 								<!-- Pay Full Amount Button -->
 								<button
 									@click="addCustomPayment(lastSelectedMethod, remainingAmount)"
 									:class="[
-										'font-bold rounded-lg bg-green-500 text-white active:bg-green-600 flex items-center justify-center',
+										'font-black rounded-lg bg-green-50 border-2 border-green-600 text-green-950 active:bg-green-100 flex items-center justify-center',
 										mobileButtonSize.height, mobileButtonSize.text, mobileButtonSize.gap
 									]"
 								>
@@ -866,10 +866,10 @@
 									@click="addCreditAccountPayment"
 									:disabled="isSubmitting"
 									:class="[
-										'font-semibold rounded-lg flex items-center justify-center',
+										'font-black rounded-lg flex items-center justify-center',
 										isSubmitting
-											? 'bg-orange-300 text-white cursor-not-allowed'
-											: 'bg-orange-500 text-white active:bg-orange-600',
+											? 'bg-amber-50 border-2 border-amber-300 text-amber-400 cursor-not-allowed'
+											: 'bg-amber-50 border-2 border-amber-600 text-amber-950 active:bg-amber-100',
 										mobileButtonSize.height, mobileButtonSize.text, mobileButtonSize.gap
 									]"
 								>
@@ -885,15 +885,16 @@
 							</div>
 
 							<!-- Single Pay button (when no credit sale option) -->
+							<!-- Hidden for installment mode when canComplete (avoid accidental full payment) -->
 							<button
-								v-else-if="lastSelectedMethod && remainingAmount > 0"
+								v-else-if="lastSelectedMethod && remainingAmount > 0 && !(isInstallmentEnabled && canComplete)"
 								@click="addCustomPayment(lastSelectedMethod, remainingAmount)"
 								:disabled="isSubmitting"
 								:class="[
-									'w-full font-bold rounded-lg flex items-center justify-center',
+									'w-full font-black rounded-lg flex items-center justify-center',
 									isSubmitting
-										? 'bg-green-300 text-white cursor-not-allowed'
-										: 'bg-green-500 text-white active:bg-green-600',
+										? 'bg-green-50 border-2 border-green-300 text-green-400 cursor-not-allowed'
+										: 'bg-green-50 border-2 border-green-600 text-green-950 active:bg-green-100',
 									mobileButtonSize.height, mobileButtonSize.text, mobileButtonSize.gap
 								]"
 							>
@@ -904,15 +905,16 @@
 							</button>
 
 							<!-- Complete Payment Button -->
+							<!-- Shows whenever canComplete is true (handles installment + normal + credit) -->
 							<button
-								v-if="(remainingAmount === 0 || (applyWriteOff && canWriteOff)) && totalPaid > 0 && changeAmount === 0"
+								v-if="canComplete"
 								@click="completePayment"
-								:disabled="isSubmitting || !canComplete"
+								:disabled="isSubmitting"
 								:class="[
-									'w-full font-bold rounded-lg flex items-center justify-center',
+									'w-full font-black rounded-lg flex items-center justify-center',
 									isSubmitting
-										? 'bg-blue-300 text-white cursor-not-allowed'
-										: 'bg-blue-500 text-white active:bg-blue-600',
+										? 'bg-blue-50 border-2 border-blue-300 text-blue-400 cursor-not-allowed'
+										: 'bg-blue-50 border-2 border-blue-700 text-blue-950 active:bg-blue-100',
 									mobileButtonSize.height, mobileButtonSize.text, mobileButtonSize.gap
 								]"
 							>
@@ -923,7 +925,7 @@
 								<svg v-else :class="mobileButtonSize.icon" fill="currentColor" viewBox="0 0 20 20">
 									<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
 								</svg>
-								<span>{{ isSubmitting ? __('Processing...') : __('Complete Payment') }}</span>
+								<span>{{ isSubmitting ? __('Processing...') : (isInstallmentEnabled ? __('إتمام التقسيط') : __('Complete Payment')) }}</span>
 							</button>
 						</div>
 					</div>
@@ -946,13 +948,13 @@
 								v-for="num in ['7', '8', '9']"
 								:key="num"
 								@click="numpadInput(num)"
-								:class="[dynamicNumpadSize.key, 'text-xl font-semibold rounded-lg bg-gray-50 border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 text-gray-800 transition-all active:scale-95']"
+								:class="[dynamicNumpadSize.key, 'text-xl font-extrabold rounded-lg bg-gray-50 border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 text-gray-900 transition-all active:scale-95']"
 							>
 								{{ num }}
 							</button>
 							<button
 								@click="numpadBackspace"
-								:class="[dynamicNumpadSize.key, 'text-lg font-semibold rounded-lg bg-red-50 border-2 border-red-200 hover:border-red-400 hover:bg-red-100 text-red-600 transition-all active:scale-95 flex items-center justify-center']"
+								:class="[dynamicNumpadSize.key, 'text-lg font-extrabold rounded-lg bg-red-50 border-2 border-red-200 hover:border-red-400 hover:bg-red-100 text-red-600 transition-all active:scale-95 flex items-center justify-center']"
 							>
 								<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L3 12z"/>
@@ -964,13 +966,13 @@
 								v-for="num in ['4', '5', '6']"
 								:key="num"
 								@click="numpadInput(num)"
-								:class="[dynamicNumpadSize.key, 'text-xl font-semibold rounded-lg bg-gray-50 border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 text-gray-800 transition-all active:scale-95']"
+								:class="[dynamicNumpadSize.key, 'text-xl font-extrabold rounded-lg bg-gray-50 border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 text-gray-900 transition-all active:scale-95']"
 							>
 								{{ num }}
 							</button>
 							<button
 								@click="numpadClear"
-								:class="[dynamicNumpadSize.key, 'text-lg font-semibold rounded-lg bg-orange-50 border-2 border-orange-200 hover:border-orange-400 hover:bg-orange-100 text-orange-600 transition-all active:scale-95']"
+								:class="[dynamicNumpadSize.key, 'text-lg font-extrabold rounded-lg bg-orange-50 border-2 border-orange-200 hover:border-orange-400 hover:bg-orange-100 text-orange-600 transition-all active:scale-95']"
 							>
 								C
 							</button>
@@ -980,7 +982,7 @@
 								v-for="num in ['1', '2', '3']"
 								:key="num"
 								@click="numpadInput(num)"
-								:class="[dynamicNumpadSize.key, 'text-xl font-semibold rounded-lg bg-gray-50 border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 text-gray-800 transition-all active:scale-95']"
+								:class="[dynamicNumpadSize.key, 'text-xl font-extrabold rounded-lg bg-gray-50 border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 text-gray-900 transition-all active:scale-95']"
 							>
 								{{ num }}
 							</button>
@@ -991,7 +993,7 @@
 									dynamicNumpadSize.addBtn, 'row-span-2 text-xl font-bold rounded-xl transition-all active:scale-95',
 									!numpadValue || numpadValue <= 0 || !lastSelectedMethod
 										? 'bg-gray-100 border-2 border-gray-200 text-gray-400 cursor-not-allowed'
-										: 'bg-blue-600 border-2 border-blue-600 hover:bg-blue-700 text-white'
+										: 'bg-blue-100 border-2 border-blue-700 hover:bg-blue-200 text-blue-950 font-extrabold'
 								]"
 							>
 								{{ __('Add') }}
@@ -1000,13 +1002,13 @@
 							<!-- Row 4: 00, 0, . -->
 							<button
 								@click="numpadInput('00')"
-								:class="[isCompactMode ? 'h-12' : 'h-16', 'text-2xl font-semibold rounded-xl bg-gray-50 border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 text-gray-800 transition-all active:scale-95']"
+								:class="[isCompactMode ? 'h-12' : 'h-16', 'text-2xl font-extrabold rounded-xl bg-gray-50 border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 text-gray-900 transition-all active:scale-95']"
 							>
 								00
 							</button>
 							<button
 								@click="numpadInput('0')"
-								:class="[isCompactMode ? 'h-12' : 'h-16', 'text-2xl font-semibold rounded-xl bg-gray-50 border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 text-gray-800 transition-all active:scale-95']"
+								:class="[isCompactMode ? 'h-12' : 'h-16', 'text-2xl font-extrabold rounded-xl bg-gray-50 border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 text-gray-900 transition-all active:scale-95']"
 							>
 								0
 							</button>
@@ -1014,10 +1016,10 @@
 								@click="numpadInput('.')"
 								:disabled="numpadDisplay.includes('.')"
 								:class="[
-									isCompactMode ? 'h-12' : 'h-16', 'text-2xl font-semibold rounded-xl transition-all active:scale-95',
+									isCompactMode ? 'h-12' : 'h-16', 'text-2xl font-extrabold rounded-xl transition-all active:scale-95',
 									numpadDisplay.includes('.')
 										? 'bg-gray-100 border-2 border-gray-200 text-gray-400 cursor-not-allowed'
-										: 'bg-gray-50 border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 text-gray-800'
+										: 'bg-gray-50 border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 text-gray-900'
 								]"
 							>
 								.
@@ -1036,8 +1038,8 @@
 								'flex-1 inline-flex items-center justify-center gap-2 transition-colors focus:outline-none',
 								dynamicButtonHeight, 'text-sm font-semibold px-4 rounded-lg',
 								paymentEntries.length > 0 || isSubmitting
-									? 'bg-orange-300 text-white cursor-not-allowed'
-									: 'bg-orange-500 text-white hover:bg-orange-600 active:bg-orange-700 focus-visible:ring-2 focus-visible:ring-orange-400'
+									? 'bg-amber-50 border-2 border-amber-300 text-amber-400 font-black cursor-not-allowed'
+									: 'bg-amber-50 border-2 border-amber-600 text-amber-900 font-black hover:bg-amber-100 active:bg-amber-200 focus-visible:ring-2 focus-visible:ring-amber-400'
 							]"
 						>
 							<svg v-if="isSubmitting" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -1058,8 +1060,8 @@
 								'flex-1 inline-flex items-center justify-center gap-2 transition-colors focus:outline-none',
 								dynamicButtonHeight, 'text-sm font-semibold px-5 rounded-lg',
 								!canComplete || isSubmitting
-									? 'bg-blue-300 text-white cursor-not-allowed'
-									: 'bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 focus-visible:ring-2 focus-visible:ring-blue-400'
+									? 'bg-blue-50 border-2 border-blue-300 text-blue-400 font-black cursor-not-allowed'
+									: 'bg-blue-50 border-2 border-blue-700 text-blue-950 font-black hover:bg-blue-100 active:bg-blue-200 focus-visible:ring-2 focus-visible:ring-blue-400'
 							]"
 						>
 							<svg v-if="isSubmitting" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -2506,19 +2508,47 @@ function completePayment() {
 
 	// Calculate if this is a partial payment (considering write-off)
 	const effectivePaid = totalPaid.value + writeOffAmount.value
-	// Installment sales are always partial (unless full down payment)
-	const isPartial = isInstallmentEnabled.value
+
+	// For installment with down payment: always use the configured down payment amount
+	// regardless of what was actually entered in paymentEntries (prevents accidental over-payment)
+	const isInstallmentWithDownPayment = isInstallmentEnabled.value && installmentDownPayment.value > 0
+	const configuredDownPayment = isInstallmentWithDownPayment
+		? roundCurrency(installmentDownPayment.value)
+		: 0
+
+	// Installment sales are always partial unless down payment equals grand total
+	const isPartial = isInstallmentWithDownPayment
+		? configuredDownPayment < roundCurrency(props.grandTotal)
+		: isInstallmentEnabled.value
 		? roundCurrency(totalPaid.value) < roundCurrency(props.grandTotal)
 		: effectivePaid < props.grandTotal
 
-	// When overpaying with cash, the accounting paid_amount must equal grand_total
-	const accountingPaidAmount = changeAmount.value > 0
+	// When overpaying with cash, accounting paid_amount = grand_total
+	// For installment with down payment, use the configured down payment (not totalPaid)
+	const accountingPaidAmount = isInstallmentWithDownPayment
+		? configuredDownPayment
+		: changeAmount.value > 0
 		? roundCurrency(props.grandTotal)
 		: totalPaid.value
 
+	// For installment with down payment: cap payments array to the down payment amount
+	// This prevents submitting extra accidentally-added payments
+	let paymentsForSubmit = paymentEntries.value
+	if (isInstallmentWithDownPayment) {
+		let accumulated = 0
+		paymentsForSubmit = []
+		for (const entry of paymentEntries.value) {
+			if (accumulated >= configuredDownPayment) break
+			const remaining = configuredDownPayment - accumulated
+			const amt = Math.min(entry.amount, remaining)
+			paymentsForSubmit.push({ ...entry, amount: roundCurrency(amt) })
+			accumulated += amt
+		}
+	}
+
 	const paymentData = {
-		payments: paymentEntries.value,
-		change_amount: changeAmount.value,
+		payments: paymentsForSubmit,
+		change_amount: isInstallmentWithDownPayment ? 0 : changeAmount.value,
 		is_partial_payment: isPartial,
 		paid_amount: accountingPaidAmount,
 		outstanding_amount: isPartial

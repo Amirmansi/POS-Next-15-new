@@ -19,7 +19,6 @@ frappe.ui.form.on("Sales Invoice", {
 frappe.ui.form.on("Installment Schedule", {
     form_render: function(frm, cdt, cdn) {
         var row = frappe.get_doc(cdt, cdn);
-        var wrapper = frm.fields_dict["custom_installment_schedule"].grid.get_field("status");
 
         // Only show on submitted docs
         if (frm.doc.docstatus !== 1 || !frm.doc.custom_is_installment_sale) return;
