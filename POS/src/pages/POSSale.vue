@@ -1005,7 +1005,7 @@ import { cacheInvoiceHistory, getCachedInvoiceHistory } from "@/utils/offline/sy
 import { printInvoice, printInvoiceByName, printWithSilentFallback } from "@/utils/printInvoice";
 import { qzConnected, connect as qzConnect, disconnect as qzDisconnect } from "@/utils/qzTray";
 
-import { Button, Dialog, createResource, call } from "frappe-ui";
+import { Button, Dialog, createResource } from "frappe-ui";
 import { call } from "@/utils/apiWrapper";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useToast } from "@/composables/useToast";
