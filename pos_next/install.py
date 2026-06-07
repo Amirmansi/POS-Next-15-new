@@ -210,6 +210,25 @@ def create_installment_custom_fields(quiet=False):
 			"fetch_from": "customer.custom_whatsapp",
 			"read_only": 1,
 		},
+		# --- POS Profile ---
+		{
+			"dt": "POS Profile",
+			"fieldname": "posa_hide_qty_badge",
+			"fieldtype": "Check",
+			"label": "إخفاء شارة الكمية",
+			"insert_after": "posa_cash_mode_of_payment",
+			"default": "0",
+			"description": "إخفاء شارة عدد الكمية فوق أيقونات الأصناف في متصفح المنتجات",
+		},
+		{
+			"dt": "POS Profile",
+			"fieldname": "posa_enable_whatsapp_web",
+			"fieldtype": "Check",
+			"label": "تفعيل الواتساب ويب",
+			"insert_after": "posa_hide_qty_badge",
+			"default": "0",
+			"description": "تفعيل زر إرسال الفاتورة عبر واتساب ويب",
+		},
 		# Installment embedded tab on Sales Invoice
 		{
 			"dt": "Sales Invoice",

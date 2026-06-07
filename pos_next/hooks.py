@@ -104,6 +104,8 @@ fixtures = [
 					"POS Profile-posa_cash_mode_of_payment",
 					"POS Profile-posa_allow_delete",
 					"POS Profile-posa_block_sale_beyond_available_qty",
+					"POS Profile-posa_hide_qty_badge",
+					"POS Profile-posa_enable_whatsapp_web",
 					"Mode of Payment-is_wallet_payment",
 					"Promotional Scheme-pos_only",
 					"Pricing Rule-pos_only"

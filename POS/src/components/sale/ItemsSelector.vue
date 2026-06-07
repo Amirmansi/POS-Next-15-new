@@ -2,7 +2,16 @@
 	<div class="flex flex-col h-full bg-gray-50">
 		<!-- Item Groups Filter Tabs -->
 		<div class="px-1.5 sm:px-3 pt-1.5 sm:pt-3 pb-1.5 sm:pb-2 bg-white border-b border-gray-200">
-			<div class="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 scrollbar-hide snap-x snap-mandatory">
+			<div class="relative flex items-center gap-1">
+			<!-- Scroll Left Arrow -->
+			<button
+				@click="scrollCategoryBar('right')"
+				class="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-blue-100 hover:text-blue-600 text-gray-500 transition-colors duration-150 border border-gray-200"
+				:title="__('Scroll categories')"
+			>
+				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+			</button>
+		<div ref="categoryBarRef" class="flex-1 flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 scrollbar-hide snap-x snap-mandatory">
 				<!-- All Items Tab -->
 				<button
 					@click="itemStore.setSelectedItemGroup(null)"
@@ -40,7 +49,16 @@
 					<span class="max-w-[80px] sm:max-w-[100px] truncate">{{ __(group.item_group) }}</span>
 				</button>
 			</div>
+			<!-- Scroll Right Arrow -->
+			<button
+				@click="scrollCategoryBar('left')"
+				class="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-blue-100 hover:text-blue-600 text-gray-500 transition-colors duration-150 border border-gray-200"
+				:title="__('Scroll categories')"
+			>
+				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+			</button>
 		</div>
+	</div>
 
 		<!-- Cache Sync Indicator -->
 		<div v-if="cacheSyncing" class="px-1.5 sm:px-3 py-1 bg-blue-50 border-b border-blue-200">
@@ -294,12 +312,13 @@
 						@touchend.passive="getOptimizedClickHandler(item).touchend"
 						@click="getOptimizedClickHandler(item).click"
 						:class="[
-							'group relative bg-white border border-gray-200 rounded-lg p-1.5 sm:p-2.5 touch-manipulation transition-[border-color,box-shadow] duration-100 cursor-pointer hover:border-blue-400 hover:shadow-md',
+							'group relative bg-white border border-gray-200 rounded-lg p-1.5 sm:p-2.5 touch-manipulation transition-[border-color,box-shadow,background-color] duration-100 cursor-pointer hover:border-blue-400 hover:shadow-md',
+							recentlyAddedItems[item.item_code] ? 'bg-green-50 border-green-400 shadow-md shadow-green-100' : '',
 						]"
 					>
 						<!-- Stock Badge - Tap to select, long press to view warehouse availability -->
 						<div
-							v-if="(item.is_stock_item || item.is_bundle) && !item.has_variants"
+							v-if="!settingsStore.hideQtyBadge && (item.is_stock_item || item.is_bundle) && !item.has_variants"
 							@pointerdown="onLongPressStart(item)"
 							@pointerup="onLongPressEnd"
 							@pointercancel="clearLongPress"
@@ -570,7 +589,7 @@
 							<td class="px-2 sm:px-3 py-2 whitespace-nowrap w-[70px] sm:w-[100px]">
 								<!-- Stock Badge - Tap to select, long press to view warehouse availability -->
 								<div
-									v-if="(item.is_stock_item || item.is_bundle) && !item.has_variants"
+									v-if="!settingsStore.hideQtyBadge && (item.is_stock_item || item.is_bundle) && !item.has_variants"
 									@pointerdown="onLongPressStart(item)"
 									@pointerup="onLongPressEnd"
 									@pointercancel="clearLongPress"
@@ -805,6 +824,12 @@ const skipPageReset = ref(false) // Skip page reset when navigating via paginati
 // Warehouse availability dialog state
 const showWarehouseDialog = ref(false)
 const warehouseDialogItem = ref(null)
+
+// Category bar ref for arrow navigation
+const categoryBarRef = ref(null)
+
+// Visual feedback for recently added items (item_code → true)
+const recentlyAddedItems = ref({})
 
 // Infinite scroll refs
 const gridScrollContainer = ref(null)
@@ -1105,6 +1130,20 @@ function selectItem(item, autoAdd = false) {
 	return true
 }
 
+function scrollCategoryBar(direction) {
+	const el = categoryBarRef.value
+	if (!el) return
+	const amount = 160
+	el.scrollBy({ left: direction === 'left' ? amount : -amount, behavior: 'smooth' })
+}
+
+function flashItem(itemCode) {
+	recentlyAddedItems.value[itemCode] = true
+	setTimeout(() => {
+		delete recentlyAddedItems.value[itemCode]
+	}, 600)
+}
+
 function handleItemClick(itemCode) {
 	// Skip if already handled by long press handler (prevents double-add)
 	if (itemHandledByLongPress) {
@@ -1112,7 +1151,9 @@ function handleItemClick(itemCode) {
 		return
 	}
 	const item = filteredItems.value.find(i => i.item_code === itemCode)
-	selectItem(item)
+	if (selectItem(item)) {
+		flashItem(itemCode)
+	}
 }
 
 function formatCurrency(amount) {
