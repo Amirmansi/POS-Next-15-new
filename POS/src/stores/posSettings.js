@@ -68,6 +68,9 @@ export const usePOSSettingsStore = defineStore("posSettings", () => {
 		// Security
 		enable_session_lock: 0,
 		session_lock_timeout: 5,
+		// UI Customization
+		posa_hide_qty_badge: 0,
+		posa_enable_whatsapp_web: 0,
 	})
 
 	const isLoading = ref(false)
@@ -243,6 +246,14 @@ export const usePOSSettingsStore = defineStore("posSettings", () => {
 		() => Number.parseInt(settings.value.session_lock_timeout) || 5,
 	)
 
+	// Computed - UI Customization
+	const hideQtyBadge = computed(() =>
+		Boolean(settings.value.posa_hide_qty_badge),
+	)
+	const enableWhatsappWeb = computed(() =>
+		Boolean(settings.value.posa_enable_whatsapp_web),
+	)
+
 	// Resource
 	const settingsResource = createResource({
 		url: "pos_next.pos_next.doctype.pos_settings.pos_settings.get_pos_settings",
@@ -345,6 +356,9 @@ export const usePOSSettingsStore = defineStore("posSettings", () => {
 			// Security
 			enable_session_lock: 0,
 			session_lock_timeout: 5,
+			// UI Customization
+			posa_hide_qty_badge: 0,
+			posa_enable_whatsapp_web: 0,
 		}
 		isLoaded.value = false
 	}
@@ -480,6 +494,10 @@ export const usePOSSettingsStore = defineStore("posSettings", () => {
 		// Computed - Security
 		enableSessionLock,
 		sessionLockTimeout,
+
+		// Computed - UI Customization
+		hideQtyBadge,
+		enableWhatsappWeb,
 
 		// Actions
 		loadSettings,
