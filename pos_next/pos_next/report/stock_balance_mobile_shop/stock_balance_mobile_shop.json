@@ -1,0 +1,14 @@
+{
+ "add_total_row": 0,
+ "columns": [],
+ "docstatus": 0,
+ "doctype": "Report",
+ "filters": [],
+ "is_standard": "No",
+ "module": "Pos Next",
+ "name": "Stock Balance Mobile Shop",
+ "ref_doctype": "Item",
+ "report_name": "Stock Balance Mobile Shop",
+ "report_type": "Script Report",
+ "roles": []
+}

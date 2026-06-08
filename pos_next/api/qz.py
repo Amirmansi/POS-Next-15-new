@@ -48,13 +48,13 @@ def get_certificate():
 	"""Return the public certificate PEM text for QZ Tray signing."""
 	path = _cert_path()
 	if not os.path.exists(path):
-		frappe.throw(
-			_("QZ Tray certificate not found. Ask an administrator to run Setup QZ Certificate."),
-			title=_("QZ Certificate Missing"),
-		)
+		return ""
 
-	with open(path, "r") as f:
-		return f.read()
+	try:
+		with open(path, "r") as f:
+			return f.read()
+	except Exception:
+		return ""
 
 
 @frappe.whitelist()
@@ -62,13 +62,13 @@ def get_certificate_download():
 	"""Return the certificate PEM and company name for download."""
 	path = _cert_path()
 	if not os.path.exists(path):
-		frappe.throw(
-			_("QZ Tray certificate not found. Ask an administrator to run Setup QZ Certificate."),
-			title=_("QZ Certificate Missing"),
-		)
+		return {"pem": "", "company": frappe.db.get_default("company") or ""}
 
-	with open(path, "r") as f:
-		pem = f.read()
+	try:
+		with open(path, "r") as f:
+			pem = f.read()
+	except Exception:
+		return {"pem": "", "company": frappe.db.get_default("company") or ""}
 
 	company = frappe.db.get_default("company") or ""
 	return {"pem": pem, "company": company}
@@ -86,10 +86,7 @@ def sign_message(message):
 	"""
 	path = _key_path()
 	if not os.path.exists(path):
-		frappe.throw(
-			_("QZ Tray private key not found. Ask an administrator to run Setup QZ Certificate."),
-			title=_("QZ Key Missing"),
-		)
+		return ""
 
 	from cryptography.hazmat.primitives import hashes, serialization
 	from cryptography.hazmat.primitives.asymmetric import padding

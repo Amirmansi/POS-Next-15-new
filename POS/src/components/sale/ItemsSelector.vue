@@ -303,7 +303,7 @@
 				class="flex-1 overflow-y-auto p-1.5 sm:p-3"
 				style="min-height: 0;"
 			>
-				<div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-1.5 sm:gap-2.5">
+				<div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-5 gap-1 sm:gap-2 lg:gap-1.5">
 					<div
 						v-for="item in displayedItems"
 						:key="item.item_code"
@@ -312,7 +312,7 @@
 						@touchend.passive="getOptimizedClickHandler(item).touchend"
 						@click="getOptimizedClickHandler(item).click"
 						:class="[
-							'group relative bg-white border border-gray-200 rounded-lg p-1.5 sm:p-2.5 touch-manipulation transition-[border-color,box-shadow,background-color] duration-100 cursor-pointer hover:border-blue-400 hover:shadow-md',
+							'group relative bg-white border border-gray-200 rounded-lg p-1.5 sm:p-2.5 lg:p-1.5 touch-manipulation transition-[border-color,box-shadow,background-color] duration-100 cursor-pointer hover:border-blue-400 hover:shadow-md',
 							recentlyAddedItems[item.item_code] ? 'bg-green-50 border-green-400 shadow-md shadow-green-100' : '',
 						]"
 					>

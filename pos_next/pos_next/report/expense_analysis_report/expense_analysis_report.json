@@ -1,0 +1,14 @@
+{
+ "add_total_row": 1,
+ "columns": [],
+ "docstatus": 0,
+ "doctype": "Report",
+ "filters": [],
+ "is_standard": "No",
+ "module": "Pos Next",
+ "name": "Expense Analysis Report",
+ "ref_doctype": "Expense Entry",
+ "report_name": "Expense Analysis Report",
+ "report_type": "Script Report",
+ "roles": []
+}

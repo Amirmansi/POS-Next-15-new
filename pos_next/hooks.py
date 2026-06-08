@@ -127,6 +127,16 @@ fixtures = [
 		]
 	},
     {
+        "dt": "Report",
+        "filters": [
+            ["name", "in", [
+                "Installment Collection Report",
+                "Installment Tracking Report",
+                "Customer Installment Status"
+            ]]
+        ]
+    },
+    {
         "dt": "Workspace",
         "filters": [
             ["name", "in", ["POSNext"]]
@@ -242,7 +252,10 @@ doc_events = {
 	},
 	"Promotional Scheme": {
 		"on_update": "pos_next.overrides.pricing_rule.sync_pos_only_to_pricing_rules"
-	}
+	},
+	"Payment Entry": {
+		"on_submit": "pos_next.api.payment_entry_hooks.update_installment_on_payment"
+	},
 }
 
 # Scheduled Tasks

@@ -2886,13 +2886,75 @@ def create_installment_schedule(invoice_name, installment_data):
     """
     Generate an installment schedule for a submitted Sales Invoice.
     Called from POS after successful invoice submission.
+    Also creates a Payment Entry for the down payment if provided.
     """
     if isinstance(installment_data, str):
         installment_data = json.loads(installment_data)
 
     invoice = frappe.get_doc("Sales Invoice", invoice_name)
     _generate_installment_schedule(invoice, installment_data)
+
+    # Create down payment PE if applicable
+    down_payment = flt(installment_data.get("down_payment") or 0)
+    down_payment_mode = installment_data.get("down_payment_mode_of_payment")
+    if down_payment > 0 and down_payment_mode:
+        try:
+            _create_down_payment_entry(invoice_name, down_payment, down_payment_mode)
+        except Exception:
+            frappe.log_error(frappe.get_traceback(), "Down Payment PE Creation Error")
+
     return {"success": True, "invoice": invoice_name}
+
+
+def _create_down_payment_entry(invoice_name, amount, mode_of_payment):
+    """Create a standalone Payment Entry for the installment down payment.
+
+    Uses reference_no = '{invoice}-DP' so the payment_entry_hooks skip updating
+    any monthly installment row. ERPNext GL reconciliation updates the invoice's
+    outstanding_amount automatically when this PE is submitted.
+    """
+    invoice = frappe.get_doc("Sales Invoice", invoice_name)
+    company = invoice.company
+
+    receivable_account = frappe.get_cached_value("Company", company, "default_receivable_account")
+
+    # Resolve paid_to account from mode_of_payment
+    paid_to_account = frappe.db.get_value(
+        "Mode of Payment Account",
+        {"parent": mode_of_payment, "company": company},
+        "default_account",
+    )
+    if not paid_to_account:
+        paid_to_account = frappe.get_cached_value("Company", company, "default_cash_account")
+    if not paid_to_account:
+        frappe.throw(
+            _("لم يتم العثور على الحساب لطريقة الدفع {0}").format(mode_of_payment)
+        )
+
+    pe = frappe.new_doc("Payment Entry")
+    pe.payment_type = "Receive"
+    pe.posting_date = nowdate()
+    pe.company = company
+    pe.party_type = "Customer"
+    pe.party = invoice.customer
+    pe.party_name = invoice.customer_name
+    pe.paid_from = receivable_account
+    pe.paid_to = paid_to_account
+    pe.paid_amount = flt(amount)
+    pe.received_amount = flt(amount)
+    pe.reference_no = f"{invoice_name}-DP"
+    pe.reference_date = nowdate()
+    pe.mode_of_payment = mode_of_payment
+    pe.remarks = f"الدفعة المقدمة - الفاتورة {invoice_name}"
+    pe.append("references", {
+        "reference_doctype": "Sales Invoice",
+        "reference_name": invoice_name,
+        "allocated_amount": flt(amount),
+    })
+    pe.flags.ignore_permissions = True
+    pe.save()
+    pe.submit()
+    return pe.name
 
 
 def _generate_installment_schedule(invoice_doc, installment_data):
@@ -2967,7 +3029,45 @@ def _generate_installment_schedule(invoice_doc, installment_data):
 
 
 @frappe.whitelist()
-def create_installment_payment_entry(invoice_name, installment_number, amount):
+def get_pending_installments(invoice_name):
+    """Return unpaid/overdue installment rows for a submitted installment invoice."""
+    from frappe.utils import flt, getdate, today
+
+    invoice = frappe.get_doc("Sales Invoice", invoice_name)
+    today_date = getdate(today())
+    if invoice.docstatus != 1:
+        frappe.throw(_("الفاتورة غير مكتملة"))
+    if not invoice.get("custom_is_installment_sale"):
+        frappe.throw(_("هذه الفاتورة ليست بيع تقسيط"))
+
+    rows = []
+    for row in invoice.get("custom_installment_schedule") or []:
+        remaining = flt(row.remaining_amount)
+        if remaining <= 0 or row.status == "مدفوع":
+            continue
+        rows.append({
+            "name": row.name,
+            "installment_number": row.installment_number,
+            "due_date": row.due_date,
+            "amount": flt(row.amount),
+            "paid_amount": flt(row.paid_amount),
+            "remaining_amount": remaining,
+            "status": row.status,
+            "is_overdue": row.due_date and getdate(row.due_date) < today_date,
+        })
+
+    rows.sort(key=lambda r: (r.get("due_date") or "", r.get("installment_number") or 0))
+    return {
+        "invoice": invoice.name,
+        "customer": invoice.customer_name or invoice.customer,
+        "currency": invoice.currency,
+        "monthly_amount": flt(invoice.custom_installment_monthly_amount),
+        "installments": rows,
+    }
+
+
+@frappe.whitelist()
+def create_installment_payment_entry(invoice_name, installment_number, amount, mode_of_payment=None):
     """
     Create a Payment Entry for a specific installment, then update
     the Installment Schedule row (mark as paid).
@@ -3050,6 +3150,8 @@ def create_installment_payment_entry(invoice_name, installment_number, amount):
     pe.reference_no = f"{invoice_name}-Q{installment_number}"
     pe.reference_date = today()
     pe.remarks = f"تحصيل القسط رقم {installment_number} - الفاتورة {invoice_name}"
+    if mode_of_payment:
+        pe.mode_of_payment = mode_of_payment
     pe.append("references", {
         "reference_doctype": "Sales Invoice",
         "reference_name": invoice_name,
@@ -3062,7 +3164,12 @@ def create_installment_payment_entry(invoice_name, installment_number, amount):
     # Update the installment schedule row
     new_paid = flt(schedule_row.paid_amount) + amount
     new_remaining = max(0, flt(schedule_row.amount) - new_paid)
-    new_status = "مدفوع" if new_remaining <= 0.01 else "مستحق"
+    if new_remaining <= 0.01:
+        new_status = "مدفوع"
+    elif new_paid > 0:
+        new_status = "مدفوع جزئياً"
+    else:
+        new_status = "مستحق"
 
     frappe.db.set_value(
         "Installment Schedule",

@@ -1,0 +1,114 @@
+/* POS Next — Custom CSS | site5.local */
+
+.payment-dialog-shell {
+  max-height: min(88vh, 920px);
+}
+
+.payment-dialog-scroll {
+  scrollbar-width: thin;
+}
+
+.payment-dialog-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  background: #ffffff !important;
+}
+
+[dir="rtl"] .payment-dialog-actions {
+  direction: rtl;
+}
+
+:root {
+  --pos-black: #1a1a1a;
+  --pos-green: #22c55e;
+  --pos-orange: #f97316;
+  --pos-blue: #3b82f6;
+  --pos-red: #ef4444;
+  --pos-gray-bg: #f5f5f5;
+  --pos-border: #e0e0e0;
+  --pos-text: #1a1a1a;
+  --pos-muted: #555555;
+}
+
+[dir="rtl"] .dialog-content {
+  direction: rtl;
+  font-family: "Cairo", "Tajawal", "Inter", sans-serif;
+}
+
+.dialog-content .text-gray-900,
+.dialog-content .text-gray-800,
+.dialog-content .text-gray-700,
+.dialog-content label,
+.dialog-content span,
+.dialog-content p {
+  color: var(--pos-text) !important;
+}
+
+.dialog-content .text-gray-500,
+.dialog-content .text-gray-600 {
+  color: var(--pos-muted) !important;
+}
+
+.dialog-content input[type="text"],
+.dialog-content input[type="number"],
+.dialog-content input[type="date"],
+.dialog-content select,
+.dialog-content textarea {
+  color: var(--pos-black) !important;
+  background-color: #ffffff !important;
+}
+
+.dialog-content button {
+  font-weight: 700;
+}
+
+.dialog-content .bg-green-600,
+.dialog-content .bg-green-500,
+.dialog-content button[class*="bg-green"] {
+  background-color: var(--pos-green) !important;
+  color: #ffffff !important;
+}
+
+.dialog-content .bg-orange-500,
+.dialog-content .bg-orange-600 {
+  background-color: var(--pos-orange) !important;
+  color: #ffffff !important;
+}
+
+.dialog-content .font-bold.text-lg,
+.dialog-content .text-2xl,
+.dialog-content .text-xl {
+  color: var(--pos-black) !important;
+  font-weight: 800 !important;
+}
+
+.dialog-content .text-orange-600,
+.dialog-content .text-orange-700 {
+  color: var(--pos-orange) !important;
+  font-weight: 800 !important;
+}
+
+.dialog-content .text-green-600,
+.dialog-content .text-green-700 {
+  color: var(--pos-green) !important;
+  font-weight: 800 !important;
+}
+
+.btn-collect-installment {
+  background: var(--pos-green) !important;
+  color: white !important;
+  border: none !important;
+  padding: 5px 12px !important;
+  border-radius: 6px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+}
+
+.installment-schedule-grid .grid-row td {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: var(--pos-black) !important;
+}

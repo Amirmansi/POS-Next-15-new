@@ -2644,6 +2644,8 @@ function handleManagementMenuClick(menuItem) {
 	} else if (menuItem === "products") {
 		// Open Stock Lookup dialog in search mode
 		showStockLookup.value = true;
+	} else if (menuItem === "installment-report") {
+		window.open('/app/query-report/Installment%20Tracking%20Report', '_blank');
 	}
 }
 

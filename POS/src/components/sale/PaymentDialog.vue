@@ -1,23 +1,21 @@
 <template>
 	<Dialog v-model="show" :options="{ title: isSalesOrder ? __('Complete Sales Order') : __('Complete Payment'), size: dynamicDialogSize }">
 		<template #body-content>
-			<!-- Two Column Layout - auto-sized on mobile, constrained on desktop -->
+			<div class="payment-dialog-shell flex flex-col min-h-0">
 			<div
 				:class="[
-					'grid grid-cols-1 lg:grid-cols-5 items-stretch',
+					'payment-dialog-scroll flex-1 min-h-0 overflow-y-auto',
+					'grid grid-cols-1 lg:grid-cols-5 items-start',
 					dynamicGap,
-					isMobileView ? '' : 'overflow-hidden'
 				]"
 				:style="isMobileView ? {} : { maxHeight: dialogContentMaxHeight }"
 			>
-				<!-- Left Column (2/5): Sales Person + Invoice Summary -->
+				<!-- Left Column (2/5): Sales Person + Invoice Summary + Installment -->
 				<div
 					:class="[
-						'lg:col-span-2 flex flex-col min-h-0',
+						'lg:col-span-2 flex flex-col',
 						isSmallMobile ? 'gap-1' : 'gap-1.5',
-						isMobileView ? 'overflow-visible' : 'overflow-hidden'
 					]"
-					:style="{ maxHeight: isMobileView ? 'none' : dynamicLeftColumnHeight }"
 				>
 					<!-- Delivery Date for Sales Orders -->
 					<div v-if="isSalesOrder" class="bg-orange-50 border border-orange-200 rounded-lg p-2">
@@ -490,12 +488,11 @@
 							</div>
 						</div>
 					</div>
-				</div>
 
 				<!-- ══════════════════════════════════════════ -->
 				<!-- Installment Panel — الدفع بالتقسيط        -->
 				<!-- ══════════════════════════════════════════ -->
-				<div v-if="!isSalesOrder" class="flex-shrink-0">
+				<div v-if="!isSalesOrder" class="flex-shrink-0 mt-1.5">
 					<!-- Toggle Button -->
 					<button
 						@click="toggleInstallment"
@@ -635,16 +632,16 @@
 						</div>
 					</div>
 				</div>
+				</div>
 				<!-- End Left Column -->
 
 				<!-- Right Column (3/5): Payment Methods + Quick Amounts + Numpad -->
 				<div
 					ref="rightColumnRef"
 					:class="[
-						'lg:col-span-3 bg-white rounded-xl border-2 border-gray-200 flex flex-col',
+						'lg:col-span-3 bg-white rounded-xl border-2 border-gray-200 flex flex-col min-h-0',
 						isSmallMobile ? 'p-1.5' : 'p-2 lg:p-3'
 					]"
-					:style="isMobileView ? {} : { minHeight: rightColumnMinHeight }"
 				>
 					<!-- Payment Methods -->
 					<div :class="isSmallMobile ? 'mb-1' : 'mb-1.5 lg:mb-3'">
@@ -843,91 +840,6 @@
 							<p :class="isSmallMobile ? 'text-[10px]' : 'text-xs'" class="text-blue-600">{{ __('Select a payment method') }}</p>
 						</div>
 
-						<!-- Mobile Action Buttons - Always visible at bottom -->
-						<div :class="['flex-shrink-0', isSmallMobile ? 'space-y-1' : 'space-y-1.5']">
-							<!-- Two buttons side by side when both needed -->
-							<div v-if="lastSelectedMethod && remainingAmount > 0 && allowCreditSale && paymentEntries.length === 0 && !isInstallmentEnabled"
-								class="grid grid-cols-2" :class="isSmallMobile ? 'gap-1' : 'gap-1.5'">
-								<!-- Pay Full Amount Button -->
-								<button
-									@click="addCustomPayment(lastSelectedMethod, remainingAmount)"
-									:class="[
-										'font-black rounded-lg bg-green-50 border-2 border-green-600 text-green-950 active:bg-green-100 flex items-center justify-center',
-										mobileButtonSize.height, mobileButtonSize.text, mobileButtonSize.gap
-									]"
-								>
-									<svg :class="mobileButtonSize.icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
-									</svg>
-									<span class="truncate">{{ formatCurrency(remainingAmount) }}</span>
-								</button>
-								<!-- Pay on Account Button -->
-								<button
-									@click="addCreditAccountPayment"
-									:disabled="isSubmitting"
-									:class="[
-										'font-black rounded-lg flex items-center justify-center',
-										isSubmitting
-											? 'bg-amber-50 border-2 border-amber-300 text-amber-400 cursor-not-allowed'
-											: 'bg-amber-50 border-2 border-amber-600 text-amber-950 active:bg-amber-100',
-										mobileButtonSize.height, mobileButtonSize.text, mobileButtonSize.gap
-									]"
-								>
-									<svg v-if="isSubmitting" :class="mobileButtonSize.icon" class="animate-spin" fill="none" viewBox="0 0 24 24">
-										<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-										<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-									</svg>
-									<svg v-else :class="mobileButtonSize.icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-									</svg>
-									<span class="truncate">{{ isSubmitting ? __('Processing...') : __('On Account') }}</span>
-								</button>
-							</div>
-
-							<!-- Single Pay button (when no credit sale option) -->
-							<!-- Hidden for installment mode when canComplete (avoid accidental full payment) -->
-							<button
-								v-else-if="lastSelectedMethod && remainingAmount > 0 && !(isInstallmentEnabled && canComplete)"
-								@click="addCustomPayment(lastSelectedMethod, remainingAmount)"
-								:disabled="isSubmitting"
-								:class="[
-									'w-full font-black rounded-lg flex items-center justify-center',
-									isSubmitting
-										? 'bg-green-50 border-2 border-green-300 text-green-400 cursor-not-allowed'
-										: 'bg-green-50 border-2 border-green-600 text-green-950 active:bg-green-100',
-									mobileButtonSize.height, mobileButtonSize.text, mobileButtonSize.gap
-								]"
-							>
-								<svg :class="mobileButtonSize.icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
-								</svg>
-								<span>{{ __('Pay') }} {{ formatCurrency(remainingAmount) }}</span>
-							</button>
-
-							<!-- Complete Payment Button -->
-							<!-- Shows whenever canComplete is true (handles installment + normal + credit) -->
-							<button
-								v-if="canComplete"
-								@click="completePayment"
-								:disabled="isSubmitting"
-								:class="[
-									'w-full font-black rounded-lg flex items-center justify-center',
-									isSubmitting
-										? 'bg-blue-50 border-2 border-blue-300 text-blue-400 cursor-not-allowed'
-										: 'bg-blue-50 border-2 border-blue-700 text-blue-950 active:bg-blue-100',
-									mobileButtonSize.height, mobileButtonSize.text, mobileButtonSize.gap
-								]"
-							>
-								<svg v-if="isSubmitting" :class="mobileButtonSize.icon" class="animate-spin" fill="none" viewBox="0 0 24 24">
-									<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-									<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-								</svg>
-								<svg v-else :class="mobileButtonSize.icon" fill="currentColor" viewBox="0 0 20 20">
-									<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-								</svg>
-								<span>{{ isSubmitting ? __('Processing...') : (isInstallmentEnabled ? __('إتمام التقسيط') : __('Complete Payment')) }}</span>
-							</button>
-						</div>
 					</div>
 					<!-- End Mobile Payment Section -->
 
@@ -1027,57 +939,67 @@
 							</div>
 						</div>
 
-					<!-- Action Buttons - Below Keypad (Desktop only) -->
-					<div :class="['hidden lg:flex items-center gap-2', isCompactMode ? 'mt-2' : 'mt-4']">
-						<!-- Pay on Account Button (if credit sales enabled) -->
+				</div>
+				<!-- End Right Column -->
+			</div>
+			<!-- End scrollable grid -->
+
+			<!-- Sticky action bar — always visible -->
+			<div class="payment-dialog-actions flex-shrink-0 border-t-2 border-gray-200 bg-white px-3 py-3 mt-2 rounded-b-xl shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
+				<div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-3">
+					<div class="flex-1 min-w-0 text-center lg:text-start">
+						<div class="text-xs font-bold text-gray-500">{{ __('Remaining') }}</div>
+						<div class="text-lg font-black text-orange-600">{{ formatCurrency(remainingAmount) }}</div>
+					</div>
+					<div class="flex flex-col sm:flex-row gap-2 flex-[2]">
 						<button
-							v-if="allowCreditSale"
+							v-if="allowCreditSale && !isInstallmentEnabled"
 							@click="addCreditAccountPayment"
 							:disabled="paymentEntries.length > 0 || isSubmitting"
 							:class="[
-								'flex-1 inline-flex items-center justify-center gap-2 transition-colors focus:outline-none',
-								dynamicButtonHeight, 'text-sm font-semibold px-4 rounded-lg',
+								'flex-1 inline-flex items-center justify-center gap-2 rounded-xl border-2 font-black transition-colors',
+								dynamicButtonHeight, 'text-sm px-4',
 								paymentEntries.length > 0 || isSubmitting
-									? 'bg-amber-50 border-2 border-amber-300 text-amber-400 font-black cursor-not-allowed'
-									: 'bg-amber-50 border-2 border-amber-600 text-amber-900 font-black hover:bg-amber-100 active:bg-amber-200 focus-visible:ring-2 focus-visible:ring-amber-400'
+									? 'bg-amber-50 border-amber-200 text-amber-300 cursor-not-allowed'
+									: 'bg-amber-50 border-amber-600 text-amber-950 hover:bg-amber-100'
 							]"
 						>
-							<svg v-if="isSubmitting" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-								<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-								<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-							</svg>
-							<svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-							</svg>
 							<span>{{ isSubmitting ? __('Processing...') : __('Pay on Account') }}</span>
 						</button>
-
-						<!-- Complete/Partial Payment Button -->
+						<button
+							v-if="lastSelectedMethod && remainingAmount > 0 && !isInstallmentEnabled"
+							@click="addCustomPayment(lastSelectedMethod, remainingAmount)"
+							:disabled="isSubmitting"
+							:class="[
+								'flex-1 inline-flex items-center justify-center gap-2 rounded-xl border-2 font-black transition-colors',
+								dynamicButtonHeight, 'text-sm px-4',
+								isSubmitting
+									? 'bg-green-50 border-green-200 text-green-300 cursor-not-allowed'
+									: 'bg-green-50 border-green-600 text-green-950 hover:bg-green-100'
+							]"
+						>
+							<span>{{ __('Pay') }} {{ formatCurrency(remainingAmount) }}</span>
+						</button>
 						<button
 							@click="completePayment"
 							:disabled="!canComplete || isSubmitting"
 							:class="[
-								'flex-1 inline-flex items-center justify-center gap-2 transition-colors focus:outline-none',
-								dynamicButtonHeight, 'text-sm font-semibold px-5 rounded-lg',
+								'flex-[1.2] inline-flex items-center justify-center gap-2 rounded-xl border-2 font-black transition-colors',
+								dynamicButtonHeight, 'text-sm px-5',
 								!canComplete || isSubmitting
-									? 'bg-blue-50 border-2 border-blue-300 text-blue-400 font-black cursor-not-allowed'
-									: 'bg-blue-50 border-2 border-blue-700 text-blue-950 font-black hover:bg-blue-100 active:bg-blue-200 focus-visible:ring-2 focus-visible:ring-blue-400'
+									? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
+									: isInstallmentEnabled
+										? 'bg-indigo-600 border-indigo-700 text-white hover:bg-indigo-700 shadow-md'
+										: 'bg-green-600 border-green-700 text-white hover:bg-green-700 shadow-md'
 							]"
 						>
-							<svg v-if="isSubmitting" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-								<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-								<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-							</svg>
-							<svg v-else class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-								<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-							</svg>
-							<span>{{ isSubmitting ? __('Processing...') : __('Complete Payment') }}</span>
+							<span>{{ isSubmitting ? __('Processing...') : completePaymentLabel }}</span>
 						</button>
 					</div>
 				</div>
-				<!-- End Right Column -->
 			</div>
-			<!-- End Two Column Layout -->
+			</div>
+			<!-- End payment-dialog-shell -->
 		</template>
 	</Dialog>
 </template>
@@ -1264,6 +1186,10 @@ function buildInstallmentData() {
 		months: installmentMonths.value,
 		interest_rate: installmentRate.value,
 		down_payment: installmentDownPayment.value,
+		down_payment_mode_of_payment:
+			installmentDownPayment.value > 0
+				? (lastSelectedMethod.value?.mode_of_payment || null)
+				: null,
 		first_date: installmentFirstDate.value || today,
 		financed_amount: installmentFinancedAmount.value,
 		total_interest: installmentTotalInterest.value,
@@ -1982,8 +1908,9 @@ const canComplete = computed(() => {
 	if (isInstallmentEnabled.value) {
 		// Zero down payment → full credit installment, always completeable
 		if (installmentDownPayment.value <= 0) return true
-		// Down payment > 0 → must have paid at least that amount
-		return totalPaid.value >= roundCurrency(installmentDownPayment.value)
+		// Down payment > 0 → just need a payment method selected
+		// (PE is created by backend; no inline payment entries required)
+		return !!lastSelectedMethod.value
 	}
 
 	// Overpayment with cash is allowed — cashier hands back the change
@@ -2004,6 +1931,12 @@ const canComplete = computed(() => {
 
 	// Full payment required: paid must be >= grand total (change is acceptable for cash)
 	return remainingAmount.value === 0 || (changeAmount.value > 0 && allowsOverpayment.value)
+})
+
+const completePaymentLabel = computed(() => {
+	if (isInstallmentEnabled.value) return __("Complete Installment Sale")
+	if (isSalesOrder.value) return __("Complete Sales Order")
+	return __("Complete Payment")
 })
 
 // Use quick amounts composable for smart amount suggestions
@@ -2479,12 +2412,17 @@ function completePayment() {
 		return
 	}
 
-	// ── Installment: zero down payment (full credit installment) ──────────────
-	if (isInstallmentEnabled.value && installmentDownPayment.value <= 0) {
+	// ── Installment mode: always submit with empty inline payments ────────────
+	// Down payment (if any) is created as a standalone Payment Entry by the backend.
+	// This ensures ERPNext GL reconciliation sets the invoice to "Partly Paid" automatically.
+	if (isInstallmentEnabled.value) {
+		const hasDownPayment = installmentDownPayment.value > 0
 		const paymentData = {
 			payments: [],
 			change_amount: 0,
-			is_partial_payment: false,
+			is_partial_payment: hasDownPayment
+				? roundCurrency(installmentDownPayment.value) < roundCurrency(props.grandTotal)
+				: true,
 			is_credit_sale: true,
 			paid_amount: 0,
 			outstanding_amount: props.grandTotal,
@@ -2494,61 +2432,30 @@ function completePayment() {
 			is_write_off: false,
 			installment_data: buildInstallmentData(),
 		}
-		log.debug("[PaymentDialog] Emitting installment (no down payment):", paymentData)
+		log.debug("[PaymentDialog] Emitting installment payment:", paymentData)
 		emit("payment-completed", paymentData)
 		show.value = false
 		return
 	}
 
 	// Safety: block non-cash overpayment (cash overpayment with change is allowed)
-	if (changeAmount.value > 0 && !allowsOverpayment.value && !isInstallmentEnabled.value) {
+	if (changeAmount.value > 0 && !allowsOverpayment.value) {
 		log.warn("[PaymentDialog] Cannot complete - overpayment detected without cash")
 		return
 	}
 
 	// Calculate if this is a partial payment (considering write-off)
 	const effectivePaid = totalPaid.value + writeOffAmount.value
-
-	// For installment with down payment: always use the configured down payment amount
-	// regardless of what was actually entered in paymentEntries (prevents accidental over-payment)
-	const isInstallmentWithDownPayment = isInstallmentEnabled.value && installmentDownPayment.value > 0
-	const configuredDownPayment = isInstallmentWithDownPayment
-		? roundCurrency(installmentDownPayment.value)
-		: 0
-
-	// Installment sales are always partial unless down payment equals grand total
-	const isPartial = isInstallmentWithDownPayment
-		? configuredDownPayment < roundCurrency(props.grandTotal)
-		: isInstallmentEnabled.value
-		? roundCurrency(totalPaid.value) < roundCurrency(props.grandTotal)
-		: effectivePaid < props.grandTotal
+	const isPartial = effectivePaid < props.grandTotal
 
 	// When overpaying with cash, accounting paid_amount = grand_total
-	// For installment with down payment, use the configured down payment (not totalPaid)
-	const accountingPaidAmount = isInstallmentWithDownPayment
-		? configuredDownPayment
-		: changeAmount.value > 0
+	const accountingPaidAmount = changeAmount.value > 0
 		? roundCurrency(props.grandTotal)
 		: totalPaid.value
 
-	// For installment with down payment: cap payments array to the down payment amount
-	// This prevents submitting extra accidentally-added payments
-	let paymentsForSubmit = paymentEntries.value
-	if (isInstallmentWithDownPayment) {
-		let accumulated = 0
-		paymentsForSubmit = []
-		for (const entry of paymentEntries.value) {
-			if (accumulated >= configuredDownPayment) break
-			const remaining = configuredDownPayment - accumulated
-			const amt = Math.min(entry.amount, remaining)
-			paymentsForSubmit.push({ ...entry, amount: roundCurrency(amt) })
-			accumulated += amt
-		}
-	}
-
 	const paymentData = {
-		payments: paymentsForSubmit,
-		change_amount: isInstallmentWithDownPayment ? 0 : changeAmount.value,
+		payments: paymentEntries.value,
+		change_amount: changeAmount.value,
 		is_partial_payment: isPartial,
 		paid_amount: accountingPaidAmount,
 		outstanding_amount: isPartial
@@ -2561,7 +2468,7 @@ function completePayment() {
 		write_off_amount: writeOffAmount.value,
 		is_write_off: writeOffAmount.value > 0,
 		// Installment data (null when not an installment sale)
-		installment_data: isInstallmentEnabled.value ? buildInstallmentData() : null,
+		installment_data: null,
 	}
 
 	log.debug("[PaymentDialog] Emitting payment-completed:", paymentData)

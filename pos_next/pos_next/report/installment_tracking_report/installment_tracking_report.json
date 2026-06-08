@@ -1,0 +1,32 @@
+{
+ "add_total_row": 0,
+ "columns": [],
+ "creation": "2026-06-08 00:00:00.000000",
+ "disabled": 0,
+ "doctype": "Report",
+ "filters": [
+  {"fieldname": "customer", "fieldtype": "Link", "label": "العميل", "options": "Customer", "width": "100"},
+  {"fieldname": "sales_invoice", "fieldtype": "Link", "label": "رقم الفاتورة", "options": "Sales Invoice", "width": "100"},
+  {"fieldname": "from_date", "fieldtype": "Date", "label": "من تاريخ الاستحقاق", "default": "2025-01-01", "width": "80"},
+  {"fieldname": "to_date", "fieldtype": "Date", "label": "إلى تاريخ الاستحقاق", "default": "Today", "width": "80"},
+  {"fieldname": "installment_status", "fieldtype": "Select", "label": "حالة القسط", "options": "\nمستحق\nمتأخر\nمدفوع\nمدفوع جزئياً\nلم يحن بعد", "width": "80"},
+  {"fieldname": "item_group", "fieldtype": "Link", "label": "مجموعة الصنف", "options": "Item Group", "width": "100"},
+  {"fieldname": "overdue_only", "fieldtype": "Check", "label": "المتأخرون فقط", "default": 0, "width": "80"},
+  {"fieldname": "due_this_month", "fieldtype": "Check", "label": "مستحق هذا الشهر فقط", "default": 0, "width": "80"},
+  {"fieldname": "min_remaining", "fieldtype": "Currency", "label": "الحد الأدنى للمتبقي", "width": "80"}
+ ],
+ "is_standard": "Yes",
+ "modified": "2026-06-08 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "POS Next",
+ "name": "Installment Tracking Report",
+ "owner": "Administrator",
+ "ref_doctype": "Sales Invoice",
+ "report_name": "Installment Tracking Report",
+ "report_type": "Script Report",
+ "roles": [
+  {"role": "System Manager"},
+  {"role": "Accounts User"},
+  {"role": "POSNext Cashier"}
+ ]
+}

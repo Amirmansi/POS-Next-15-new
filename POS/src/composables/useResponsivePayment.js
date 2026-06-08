@@ -37,31 +37,16 @@ export function useResponsivePayment() {
 	// Check if we're on a mobile device (for mobile-specific behavior)
 	const isMobileView = computed(() => viewportWidth.value < 1024)
 
-	// Dynamic content max height based on viewport
+	// Scrollable body height — leaves room for dialog header + sticky action bar
 	const dialogContentMaxHeight = computed(() => {
 		const height = viewportHeight.value
-		const width = viewportWidth.value
-
-		// On mobile, don't set max-height - let content determine size
-		if (width < 1024) {
+		if (viewportWidth.value < 1024) {
 			return "none"
 		}
-		// Desktop: use fixed pixel calculation
-		const availableHeight = height - 100
-		return `${Math.min(Math.max(500, availableHeight), height - 80)}px`
+		return `${Math.max(360, height - 200)}px`
 	})
 
-	// Dynamic column heights based on viewport
-	const dynamicLeftColumnHeight = computed(() => {
-		const height = viewportHeight.value
-		if (viewportWidth.value < 1024) {
-			// Mobile/tablet: auto height, will stack
-			return "auto"
-		}
-		// Desktop: calculate based on available space
-		const availableHeight = height - 160 // Header + padding + action buttons
-		return `${Math.max(400, Math.min(availableHeight, height - 120))}px`
-	})
+	const dynamicLeftColumnHeight = computed(() => "auto")
 
 	// Check if we're in compact mode (small screens)
 	const isCompactMode = computed(() => viewportHeight.value < 700 || viewportWidth.value < 1024)
